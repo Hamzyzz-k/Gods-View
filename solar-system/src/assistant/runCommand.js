@@ -126,7 +126,13 @@ export async function runCommand(command) {
       speak(text);
     } catch (err) {
       const fallback = interpretCommand(command);
-      pending.textContent = `${fallback} (AI assistant unreachable — used local fallback)`;
+      // Distinguish "no backend deployed" from "backend is there but failed".
+      // The first is the normal case when the site is served as plain static
+      // files (npx serve), and says so rather than looking like a fault.
+      const reason = assistantBackendAvailable
+        ? "AI unreachable — offline mode"
+        : "offline mode — run `netlify dev` for AI answers";
+      pending.textContent = `${fallback} (${reason})`;
       if (lastReplyWasAnswer) pending.classList.add("answer");
       speak(fallback);
     }
