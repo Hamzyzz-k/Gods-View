@@ -1,0 +1,672 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #000;
+  font-family: 'Segoe UI', Arial, sans-serif;
+}
+
+canvas {
+  display: block;
+}
+
+#newsTicker {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 28px;
+  z-index: 12;
+  background: rgba(6, 7, 16, 0.75);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+#newsTickerTrack {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: ticker-scroll 55s linear infinite;
+}
+
+#newsTicker:hover #newsTickerTrack {
+  animation-play-state: paused;
+}
+
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+#newsTickerTrack a {
+  color: #e8ecf7;
+  text-decoration: none;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
+#newsTickerTrack a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+#newsTickerStatus {
+  font-size: 11px;
+  opacity: 0.6;
+  padding: 0 12px;
+}
+
+.ticker-sep {
+  opacity: 0.35;
+  margin: 0 18px;
+}
+
+#ui {
+  position: fixed;
+  top: 44px;
+  left: 16px;
+  z-index: 10;
+  background: rgba(10, 12, 24, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 14px 18px;
+  color: #e8ecf7;
+  width: 260px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+#ui h1 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+  background: linear-gradient(90deg, #ffd27a, #7ab8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+#ui label {
+  font-size: 12px;
+  opacity: 0.85;
+  min-width: 45px;
+}
+
+#ui input[type="range"] {
+  flex: 1;
+  accent-color: #7ab8ff;
+}
+
+#speedVal {
+  font-size: 12px;
+  width: 36px;
+  text-align: right;
+  opacity: 0.85;
+}
+
+#ui button {
+  flex: 1;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e8ecf7;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+#ui button:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+#ttsToggleBtn,
+#ambientToggleBtn {
+  position: fixed;
+  top: 44px;
+  z-index: 30;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(10, 12, 24, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e8ecf7;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+#ttsToggleBtn {
+  right: 50px;
+}
+
+#ambientToggleBtn {
+  right:94px;
+}
+
+#ttsToggleBtn:hover,
+#ambientToggleBtn:hover {
+  background: rgba(255,255,255,0.18);
+  transform: scale(1.06);
+}
+
+#ttsToggleBtn.muted,
+#ambientToggleBtn.muted {
+  opacity: 0.55;
+}
+
+#ttsToggleBtn.speaking {
+  border-color: rgba(122, 216, 255, 0.7);
+  box-shadow: 0 0 0 3px rgba(122, 216, 255, 0.18), 0 8px 24px rgba(0,0,0,0.4);
+}
+
+#ttsToggleBtn.loading {
+  animation: tts-pulse 0.9s ease-in-out infinite;
+}
+
+@keyframes tts-pulse {
+  0%, 100% { opacity: 0.55; }
+  50% { opacity: 1; }
+}
+
+#info {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-top: 6px;
+  line-height: 1.4;
+}
+
+#tooltip {
+  position: fixed;
+  z-index: 20;
+  pointer-events: none;
+  background: rgba(10, 12, 24, 0.85);
+  border: 1px solid rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 12px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: none;
+  white-space: nowrap;
+}
+
+#infoPanel {
+  position: fixed;
+  top: 44px;
+  right: 16px;
+  z-index: 10;
+  width: 280px;
+  background: rgba(10, 12, 24, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 18px 20px;
+  color: #e8ecf7;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  display: none;
+}
+
+#infoPanel.visible {
+  display: block;
+}
+
+#infoClose {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  background: none;
+  border: none;
+  color: #e8ecf7;
+  font-size: 18px;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+#infoClose:hover {
+  opacity: 1;
+}
+
+#infoName {
+  font-size: 19px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  background: linear-gradient(90deg, #ffd27a, #7ab8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+#infoMeta {
+  font-size: 11px;
+  opacity: 0.7;
+  margin-bottom: 10px;
+  line-height: 1.6;
+}
+
+#infoMeta span {
+  display: inline-block;
+  background: rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 2px 8px;
+  margin: 0 6px 6px 0;
+}
+
+.real-data-row {
+  margin-top: 2px;
+}
+
+.real-data-row .real-data {
+  background: rgba(122, 255, 180, 0.12);
+  border: 1px solid rgba(122, 255, 180, 0.35);
+}
+
+#infoCredit {
+  font-size: 10px;
+  opacity: 0.5;
+  margin: -8px 0 10px;
+  min-height: 12px;
+}
+
+#infoDesc {
+  font-size: 13px;
+  line-height: 1.55;
+  opacity: 0.9;
+  margin-bottom: 14px;
+}
+
+#infoReset {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e8ecf7;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#infoReset:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+#agentPanel {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 10;
+  width: 300px;
+  background: rgba(10, 12, 24, 0.78);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 14px 16px;
+  color: #e8ecf7;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  display: flex;
+  flex-direction: column;
+}
+
+#agentPanel h2 {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  background: linear-gradient(90deg, #7ab8ff, #b98bff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+#agentLog {
+  max-height: 140px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+#agentLog:empty::before {
+  content: "Try: \"hide Mars\", \"focus on Saturn\", \"tell me about Jupiter\"…";
+  font-size: 11px;
+  opacity: 0.5;
+  font-style: italic;
+}
+
+#agentLog .msg {
+  font-size: 12px;
+  line-height: 1.4;
+  padding: 6px 10px;
+  border-radius: 8px;
+  max-width: 90%;
+}
+
+#agentLog .msg.user {
+  align-self: flex-end;
+  background: rgba(122, 184, 255, 0.18);
+  border: 1px solid rgba(122, 184, 255, 0.25);
+}
+
+#agentLog .msg.agent {
+  align-self: flex-start;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+#agentLog .msg.agent.answer {
+  max-width: 96%;
+  line-height: 1.5;
+  background: rgba(122, 216, 255, 0.08);
+  border: 1px solid rgba(122, 216, 255, 0.28);
+  border-left: 3px solid #7ad8ff;
+}
+
+#agentLog .msg.agent.answer::before {
+  content: "📖 ";
+}
+
+#agentChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.chip {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.16);
+  color: #e8ecf7;
+  font-size: 11px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.chip:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+#agentForm {
+  display: flex;
+  gap: 6px;
+}
+
+#agentInput {
+  flex: 1;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e8ecf7;
+  border-radius: 8px;
+  padding: 7px 10px;
+  font-size: 12px;
+  outline: none;
+}
+
+#agentInput::placeholder {
+  color: rgba(232,236,247,0.4);
+}
+
+#agentForm button {
+  background: linear-gradient(90deg, #7ab8ff, #b98bff);
+  border: none;
+  color: #0b0d18;
+  font-weight: 600;
+  font-size: 12px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+#agentForm button:hover {
+  filter: brightness(1.08);
+}
+
+/* thin scrollbar for the agent log */
+#agentLog::-webkit-scrollbar {
+  width: 6px;
+}
+#agentLog::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.2);
+  border-radius: 3px;
+}
+
+#apodModal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#apodModal.visible {
+  display: flex;
+}
+
+#apodBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+#apodCard {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 90vw);
+  max-height: 82vh;
+  overflow-y: auto;
+  background: rgba(14, 16, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 20px 22px;
+  color: #e8ecf7;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+}
+
+#apodClose {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #e8ecf7;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+#apodClose:hover {
+  opacity: 1;
+}
+
+#apodBody img {
+  width: 100%;
+  border-radius: 10px;
+  display: block;
+  margin-bottom: 14px;
+}
+
+#apodBody h3 {
+  font-size: 17px;
+  margin-bottom: 4px;
+  background: linear-gradient(90deg, #ffd27a, #7ab8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+#apodBody .apod-date {
+  font-size: 11px;
+  opacity: 0.55;
+  margin-bottom: 10px;
+}
+
+#apodBody p {
+  font-size: 13px;
+  line-height: 1.55;
+  opacity: 0.9;
+}
+
+#apodBody a {
+  color: #7ab8ff;
+}
+
+#apodBody .apod-credit {
+  font-size: 10px;
+  opacity: 0.45;
+  margin-top: 12px;
+}
+
+/* ---------- event toast (alignment / eclipse notifications) ---------- */
+#eventToast {
+  position: fixed;
+  top: 44px;
+  left: 50%;
+  transform: translate(-50%, -12px);
+  z-index: 25;
+  width: min(380px, 88vw);
+  background: rgba(14, 16, 28, 0.92);
+  border: 1px solid rgba(157, 255, 192, 0.35);
+  border-radius: 12px;
+  padding: 12px 34px 12px 16px;
+  color: #e8ecf7;
+  box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#eventToast.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+  pointer-events: auto;
+}
+
+#eventToastTitle {
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 3px;
+}
+
+#eventToastBody {
+  font-size: 12px;
+  line-height: 1.4;
+  opacity: 0.85;
+}
+
+#eventToastClose {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  background: none;
+  border: none;
+  color: #e8ecf7;
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+#eventToastClose:hover {
+  opacity: 1;
+}
+
+/* ---------- real eclipse calendar modal ---------- */
+#eclipseCalModal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+
+#eclipseCalModal.visible {
+  display: flex;
+}
+
+#eclipseCalBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+#eclipseCalCard {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 90vw);
+  max-height: 82vh;
+  overflow-y: auto;
+  background: rgba(14, 16, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 20px 22px;
+  color: #e8ecf7;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+}
+
+#eclipseCalCard h3 {
+  font-size: 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(90deg, #ffd27a, #7ab8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+#eclipseCalClose {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #e8ecf7;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+
+#eclipseCalClose:hover {
+  opacity: 1;
+}
+
+.eclipse-row {
+  background: rgba(255,255,255,0.05);
+  border-left: 3px solid rgba(122, 184, 255, 0.4);
+  border-radius: 6px;
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.eclipse-row-head {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+
+.eclipse-row-body {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.8;
+}

@@ -1,0 +1,8 @@
+[build]
+  publish = "solar-system"
+  functions = "netlify/functions"
+
+# The site itself is a static, no-build-step ES-module app loaded via importmap.
+# Only the serverless functions run Node.
+[build.environment]
+  NODE_VERSION = "20"
