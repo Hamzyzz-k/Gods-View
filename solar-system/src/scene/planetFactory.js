@@ -55,8 +55,12 @@ export function createPlanet(data) {
     });
   }
 
+  // Every planet now carries an `atmosphere` colour, tuned per body in
+  // planetData.js (see the comments there — Mercury's is a sodium exosphere,
+  // not an atmosphere, and Pluto's blue haze is real). The guard stays so a
+  // body can still opt out by omitting the field.
   if (data.atmosphere) {
-    const atmosphere = createAtmosphere(data.radius, data.atmosphere);
+    const atmosphere = createAtmosphere(data.radius, data.atmosphere, data.atmosphereOpts);
     mesh.add(atmosphere);
     data._atmosphereMesh = atmosphere;
   }
@@ -121,9 +125,14 @@ export function createPlanet(data) {
   if (data.hasMoon) {
     const moonPivot = new THREE.Object3D();
     mesh.add(moonPivot);
-    const moonGeo = new THREE.SphereGeometry(0.28, 16, 16);
+    // Earth's Moon is the one people look at closest, so it gets the most
+    // geometry of any moon here. It already had a heightmap defined in
+    // PLANET_BUMP_FACTORIES but was never using it.
+    const moonGeo = new THREE.SphereGeometry(0.28, 48, 48);
     const moonMat = new THREE.MeshStandardMaterial({
       map: getTexture("Moon", PLANET_TEXTURE_FACTORIES.Moon),
+      bumpMap: getTexture("MoonBump", PLANET_BUMP_FACTORIES.Moon),
+      bumpScale: 0.012,
       roughness: 0.9,
     });
     const moon = new THREE.Mesh(moonGeo, moonMat);
@@ -156,10 +165,19 @@ export function createPlanet(data) {
       moonPivot.rotation.y = Math.random() * Math.PI * 2; // random starting phase
       moonSystemPivot.add(moonPivot);
 
-      const moonGeo = new THREE.SphereGeometry(m.radius, 24, 24);
+      // 32 segments rather than 24, and 512x256 textures rather than 256x128:
+      // the moons previously read as flat coloured balls mostly because they
+      // had no bumpMap at all, unlike the planets. Reusing crateredHeightMap
+      // (the same generator PLANET_BUMP_FACTORIES uses) makes their craters
+      // catch the light instead of looking painted on. Still cheap — these are
+      // small on screen and the textures are generated once and cached.
+      const moonGeo = new THREE.SphereGeometry(m.radius, 32, 32);
       const texKey = `${data.name}_${m.name}`;
+      const craters = m.craterCount ?? 25;
       const moonMat = new THREE.MeshStandardMaterial({
-        map: getTexture(texKey, () => crateredPlanet(256, 128, m.hue, m.sat, m.baseLight, m.craterCount ?? 25, false)),
+        map: getTexture(texKey, () => crateredPlanet(512, 256, m.hue, m.sat, m.baseLight, craters, false)),
+        bumpMap: getTexture(texKey + "Bump", () => crateredHeightMap(512, 256, craters)),
+        bumpScale: m.bumpScale ?? 0.015,
         roughness: 0.92,
         metalness: 0.02,
       });

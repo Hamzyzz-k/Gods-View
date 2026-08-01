@@ -40,13 +40,31 @@ export const glow = createGlow(45, 0xffcc55, 0.9);
 sun.add(glow);
 
 // Fresnel-style atmosphere rim glow: a slightly larger back-facing sphere
-// that brightens toward the silhouette edge, additively blended. Cheap
-// (no extra light sources or shadow work) and reads as a soft atmospheric
-// halo on planets with real atmospheres.
-export function createAtmosphere(radius, color) {
-  const geo = new THREE.SphereGeometry(radius * 1.12, 48, 48);
+// that brightens toward the silhouette edge, additively blended.
+//
+// "Fresnel" here just means the effect strengthens as a surface turns away
+// from the viewer, which is why it concentrates into a ring at the limb and
+// stays nearly invisible face-on — the same reason a real atmosphere is most
+// obvious on a planet's edge, where you look through the most air.
+//
+// Cost is deliberately tiny so this can run on every body at VR framerates:
+// one dot product and one pow per pixel, no texture sample and no lighting.
+//
+// Tuning knobs:
+//   scale   — shell size relative to the planet; larger = thicker halo
+//   power   — falloff sharpness; higher = tighter ring hugging the limb
+//   opacity — overall strength
+//   bias    — how far the glow wraps toward the lit face
+export function createAtmosphere(radius, color, opts = {}) {
+  const { scale = 1.12, power = 3.0, opacity = 0.55, bias = 0.65 } = opts;
+  const geo = new THREE.SphereGeometry(radius * scale, 48, 48);
   const mat = new THREE.ShaderMaterial({
-    uniforms: { glowColor: { value: new THREE.Color(color) } },
+    uniforms: {
+      glowColor: { value: new THREE.Color(color) },
+      uPower: { value: power },
+      uOpacity: { value: opacity },
+      uBias: { value: bias },
+    },
     vertexShader: `
       varying vec3 vNormal;
       void main() {
@@ -57,9 +75,14 @@ export function createAtmosphere(radius, color) {
     fragmentShader: `
       varying vec3 vNormal;
       uniform vec3 glowColor;
+      uniform float uPower;
+      uniform float uOpacity;
+      uniform float uBias;
       void main() {
-        float intensity = pow(0.65 - dot(vNormal, vec3(0.0, 0.0, 1.0)), 3.0);
-        gl_FragColor = vec4(glowColor, clamp(intensity, 0.0, 1.0) * 0.55);
+        // vNormal is in view space, so dotting against the view axis gives
+        // 0 at the silhouette edge and 1 facing the camera.
+        float intensity = pow(uBias - dot(vNormal, vec3(0.0, 0.0, 1.0)), uPower);
+        gl_FragColor = vec4(glowColor, clamp(intensity, 0.0, 1.0) * uOpacity);
       }
     `,
     side: THREE.BackSide,
@@ -69,3 +92,23 @@ export function createAtmosphere(radius, color) {
   });
   return new THREE.Mesh(geo, mat);
 }
+
+// ---------- sun corona ----------
+// The sprite above gives a soft, wide bloom but no defined edge, so the sun
+// read as a lit ball rather than something emitting light. Two Fresnel shells
+// on top of it add the bright rim a star actually has:
+//
+//   inner — tight and hot, hugging the surface (the chromosphere edge)
+//   outer — wide, dim and cooler, falling off into space (the corona)
+//
+// Both are additive, so they stack into a gradient rather than flat bands.
+// Declared after createAtmosphere because they use it.
+const sunCoronaInner = createAtmosphere(8, 0xffd27a, {
+  scale: 1.10, power: 2.4, opacity: 0.75, bias: 0.85,
+});
+const sunCoronaOuter = createAtmosphere(8, 0xff9a3c, {
+  scale: 1.45, power: 1.7, opacity: 0.32, bias: 0.95,
+});
+sun.add(sunCoronaInner);
+sun.add(sunCoronaOuter);
+export const sunCorona = [sunCoronaInner, sunCoronaOuter];

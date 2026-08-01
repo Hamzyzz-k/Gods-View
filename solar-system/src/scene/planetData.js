@@ -3,8 +3,13 @@ import * as THREE from "three";
 // ---------- planet data ----------
 // distance/size are visually scaled (NOT to real astronomical scale) so the scene reads well.
 export const planetData = [
+  // Mercury has no atmosphere, but it does have a tenuous sodium exosphere
+  // that glows faintly orange (the same 589nm emission as a sodium lamp), so
+  // the rim glow here is kept very weak and warm rather than skipped outright.
+  // Deliberately far dimmer than the real-atmosphere planets below.
   { name: "Mercury", radius: 0.6, distance: 14, speed: 4.15, color: 0x9b9b9b, tilt: 0.03,
     roughness: 0.95, metalness: 0.04, bumpScale: 0.045,
+    atmosphere: 0xffb066, atmosphereOpts: { scale: 1.05, power: 4.0, opacity: 0.18 },
     meta: { "Order": "1st from Sun", "Day length": "59 Earth days", "Year length": "88 Earth days" },
     info: "The smallest and fastest planet, Mercury is a cratered, airless rock baked by the Sun and scarred by extreme temperature swings between day and night." },
   { name: "Venus",   radius: 1.0, distance: 19, speed: 1.62, color: 0xe6c58c, tilt: 177.4,
@@ -15,8 +20,11 @@ export const planetData = [
     roughness: 0.75, metalness: 0.08, bumpScale: 0.02, atmosphere: 0x6ab7ff,
     meta: { "Order": "3rd from Sun", "Day length": "24 hours", "Year length": "365.25 days" },
     info: "Our home. The only known planet with liquid water on its surface and life, protected by a magnetic field and orbited by one large moon." },
+  // Thin CO2 atmosphere with suspended dust — a pale butterscotch haze, and
+  // genuinely faint, so a low opacity is the accurate look as well as a cheap one.
   { name: "Mars",    radius: 0.7, distance: 31, speed: 0.53, color: 0xd1543e, tilt: 25.2,
     roughness: 0.96, metalness: 0.02, bumpScale: 0.035,
+    atmosphere: 0xe8a87c, atmosphereOpts: { scale: 1.08, power: 3.4, opacity: 0.34 },
     meta: { "Order": "4th from Sun", "Day length": "24.6 hours", "Year length": "687 Earth days" },
     info: "The Red Planet, colored by iron oxide dust. Home to the largest volcano and canyon in the solar system, and a major target for future human exploration.",
     moons: [
@@ -27,7 +35,10 @@ export const planetData = [
         meta: { "Diameter": "~12 km", "Orbital period": "30h 18m", "Discovered": "1877" },
         info: "Deimos is the smaller, outer moon of Mars, a smooth, dusty fragment thought to be a captured asteroid." },
     ] },
+  // A gas giant is effectively all atmosphere, so the halo is thicker and
+  // stronger than the rocky planets' — warm cream from ammonia cloud tops.
   { name: "Jupiter", radius: 3.4, distance: 42, speed: 0.084, color: 0xd8ba8a, tilt: 3.1,
+    atmosphere: 0xf0d9a8, atmosphereOpts: { scale: 1.09, power: 2.8, opacity: 0.5 },
     roughness: 0.95, metalness: 0.0, bumpScale: 0.015,
     meta: { "Order": "5th from Sun", "Day length": "10 hours", "Year length": "12 Earth years" },
     info: "The largest planet in the solar system, a gas giant with a Great Red Spot storm bigger than Earth and dozens of moons, including four large Galilean moons.",
@@ -45,7 +56,9 @@ export const planetData = [
         meta: { "Diameter": "4,821 km", "Orbital period": "16.7 days" },
         info: "Callisto is one of the most heavily cratered objects in the solar system, an ancient icy-rock world largely unchanged for billions of years." },
     ] },
+  // Saturn's upper haze is paler and softer than Jupiter's banding.
   { name: "Saturn",  radius: 2.9, distance: 55, speed: 0.034, color: 0xe6d2a3, tilt: 26.7, hasRing: true,
+    atmosphere: 0xf2e3b8, atmosphereOpts: { scale: 1.09, power: 2.9, opacity: 0.44 },
     roughness: 0.9, metalness: 0.0, bumpScale: 0.015,
     meta: { "Order": "6th from Sun", "Day length": "10.7 hours", "Year length": "29 Earth years" },
     info: "Famous for its spectacular ring system made of ice and rock particles. Saturn is the least dense planet — it would float in water.",
@@ -102,7 +115,11 @@ export const planetData = [
         meta: { "Diameter": "2,707 km", "Orbital period": "5.9 days (retrograde)" },
         info: "Triton is Neptune's largest moon and orbits backwards compared to Neptune's rotation, evidence that it's a captured world from the Kuiper Belt." },
     ] },
+  // Pluto really does have a tenuous nitrogen atmosphere: New Horizons
+  // photographed its layered blue haze backlit by the Sun in 2015, which is
+  // why the tint here is blue rather than matching its tan surface.
   { name: "Pluto", radius: 0.55, distance: 88, speed: 0.004, color: 0xd9c7a1, tilt: 122.5,
+    atmosphere: 0x9fc4e8, atmosphereOpts: { scale: 1.07, power: 3.6, opacity: 0.3 },
     roughness: 0.94, metalness: 0.02, bumpScale: 0.03,
     meta: { "Order": "Dwarf planet, Kuiper Belt", "Day length": "6.4 Earth days", "Year length": "248 Earth years" },
     info: "Pluto is the best-known dwarf planet, a small icy-rocky world in the Kuiper Belt with a heart-shaped nitrogen-ice plain called Tombaugh Regio. Reclassified from a planet to a dwarf planet in 2006.",
