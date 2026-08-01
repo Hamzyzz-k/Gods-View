@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
+import { resolveAndApplyMovement } from "./collision.js";
 
 // ---------- VR free-flight locomotion ----------
 //
@@ -37,6 +38,11 @@ let lastSnapTime = 0;
 const _camQuat = new THREE.Quaternion();
 const _forward = new THREE.Vector3();
 const _right = new THREE.Vector3();
+// Accumulates BOTH the left stick's horizontal move and the right stick's
+// vertical move into one vector, because collision has to see them as a
+// single intended translation for the frame — deflecting them separately
+// would let you, say, get vertical push-back cancelled by a horizontal slide
+// component that was resolved against a different pass entirely.
 const _moveDelta = new THREE.Vector3();
 
 // Called once at startup (from main.js, after the rig exists). Acquiring
@@ -91,6 +97,7 @@ function readStickAxes(gamepad) {
 // Called once per frame from the render loop, only while a session is active.
 export function updateLocomotion(dt) {
   const { camera, rig } = AppState;
+  _moveDelta.set(0, 0, 0);
 
   if (leftController?.userData.gamepad) {
     const { x, y } = readStickAxes(leftController.userData.gamepad);
@@ -105,15 +112,7 @@ export function updateLocomotion(dt) {
 
       // Gamepad Y is negative when the stick is pushed forward/up — standard
       // joystick convention, flip here if a real controller reads backwards.
-      _moveDelta
-        .set(0, 0, 0)
-        .addScaledVector(_forward, -y * MOVE_SPEED * dt)
-        .addScaledVector(_right, x * MOVE_SPEED * dt);
-
-      // TODO(Phase 7): this is where collision needs to deflect _moveDelta
-      // off any solid body's surface before it reaches the rig. Applying it
-      // directly for now, since collision does not exist yet.
-      rig.position.add(_moveDelta);
+      _moveDelta.addScaledVector(_forward, -y * MOVE_SPEED * dt).addScaledVector(_right, x * MOVE_SPEED * dt);
     }
   }
 
@@ -123,11 +122,14 @@ export function updateLocomotion(dt) {
     if (y !== 0) {
       // Deliberately world-up rather than camera-relative: vertical movement
       // staying tied to gravity's usual "up" is far less disorienting than
-      // having it swing around with head tilt.
-      rig.position.y += -y * VERTICAL_SPEED * dt;
+      // having it swing around with head tilt. Folded into the same delta as
+      // the horizontal move above so collision resolves both together.
+      _moveDelta.y += -y * VERTICAL_SPEED * dt;
     }
 
     if (x !== 0) {
+      // Turning rotates the rig directly rather than translating it, so it
+      // never needs to go through collision at all.
       if (SNAP_TURN_MODE) {
         const now = performance.now();
         if (now - lastSnapTime > SNAP_TURN_COOLDOWN_MS) {
@@ -139,4 +141,6 @@ export function updateLocomotion(dt) {
       }
     }
   }
+
+  if (_moveDelta.lengthSq() > 0) resolveAndApplyMovement(_moveDelta, dt);
 }
