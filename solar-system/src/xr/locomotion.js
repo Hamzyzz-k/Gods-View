@@ -12,8 +12,8 @@ import { AppState } from "../core/state.js";
 // Tuning knobs, grouped here so they're easy to find and adjust once this can
 // actually be tried on a headset:
 const MOVE_SPEED = 18; // scene units/sec — Sun-to-Pluto is ~88 units, so this crosses the system in well under a minute
-const VERTICAL_SPEED = 12;
-const TURN_SPEED_RAD_PER_SEC = 2.0; // ~115 deg/sec, smooth turn
+const VERTICAL_SPEED = 8; // slowed from 12 — felt too fast on the right stick
+const TURN_SPEED_RAD_PER_SEC = 1.3; // ~75 deg/sec — slowed from 2.0 (~115 deg/sec), same complaint
 
 // Smooth turn was the explicit choice over snap turn, despite the higher
 // motion-sickness risk that comes with combining continuous turning and free
