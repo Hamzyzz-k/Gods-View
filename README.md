@@ -34,6 +34,7 @@ inside the serverless functions.
 |---|---|---|---|
 | `GEMINI_API_KEY` | Yes | `netlify/functions/assistant.js` | Google Gemini call that powers the AI scene assistant. Without it the app still works — the client falls back to its local regex command parser. |
 | `ELEVENLABS_API_KEY` | No | `netlify/functions/tts.js` | High-quality voice narration. Optional: the app defaults to the browser's built-in Web Speech voice and only calls this when TTS is switched to `elevenlabs`. |
+| `SOLAR_SYSTEM_API_TOKEN` | No | `netlify/functions/facts.js` | Real planetary stats in the info panel. [Solar System OpenData](https://api.le-systeme-solaire.net/generatekey.html) made bearer tokens mandatory in Sept 2025; tokens are free. Without it the app just omits the "verified stats" chips. |
 
 ## VR
 

@@ -1,3 +1,4 @@
+import { showToast } from "../ui/toast.js";
 import * as THREE from "three";
 
 // ---------- real photographic textures (progressive upgrade) ----------

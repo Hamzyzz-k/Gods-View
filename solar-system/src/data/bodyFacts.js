@@ -51,7 +51,13 @@ export async function fetchBodyFacts(name) {
   if (!FACTS_ELIGIBLE.has(key)) return null;
   if (bodyFactsCache[key]) return bodyFactsCache[key];
   try {
-    const res = await fetch(`https://api.le-systeme-solaire.net/rest/bodies/${key}`);
+    // Goes through a Netlify Function rather than straight to
+    // api.le-systeme-solaire.net: that API made bearer-token auth mandatory
+    // in Sept 2025, and the token belongs on the server, not in client JS.
+    // The function returns 204 when no token is configured, in which case we
+    // simply skip the verified-stats chips.
+    const res = await fetch(`/.netlify/functions/facts?body=${encodeURIComponent(key)}`);
+    if (res.status === 204) return null;
     if (!res.ok) throw new Error("Solar System OpenData error " + res.status);
     const raw = await res.json();
     const facts = formatBodyFacts(raw);

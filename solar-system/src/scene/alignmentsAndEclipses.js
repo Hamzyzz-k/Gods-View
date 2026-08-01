@@ -1,3 +1,4 @@
+import { showToast } from "../ui/toast.js";
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
 import { createGlow } from "./sun.js";
@@ -31,26 +32,6 @@ export function circularDiffDeg(a, b) {
   const d = Math.abs(a - b) % 360;
   return d > 180 ? 360 - d : d;
 }
-
-// ---- toast notifications (used by both auto-detection and the demo buttons) ----
-export const eventToast = document.getElementById("eventToast");
-export const eventToastTitle = document.getElementById("eventToastTitle");
-export const eventToastBody = document.getElementById("eventToastBody");
-export const eventToastClose = document.getElementById("eventToastClose");
-export let toastHideTimer = null;
-
-export function showToast(title, body, duration = 6000) {
-  if (!eventToast) return;
-  eventToastTitle.textContent = title;
-  eventToastBody.textContent = body || "";
-  eventToast.classList.add("visible");
-  clearTimeout(toastHideTimer);
-  toastHideTimer = setTimeout(() => eventToast.classList.remove("visible"), duration);
-}
-eventToastClose?.addEventListener("click", () => {
-  eventToast.classList.remove("visible");
-  clearTimeout(toastHideTimer);
-});
 
 // ---- planetary alignment (conjunction) detection ----
 // Every frame, cluster planets whose heliocentric angle is within
@@ -128,7 +109,10 @@ export function checkPlanetAlignments() {
 // of waiting for one to happen naturally. Once the tween finishes, normal
 // motion resumes and the drift-apart (and the alignment toast/glow above)
 // happens exactly as it would if this had occurred on its own.
-export let alignTween = null; // { startTime, duration, items: [{pivot,start,delta}], pivots: Set }
+// alignTween lives on AppState, not as a module-level `let`: the frame loop
+// clears it when the tween finishes, and an imported binding is read-only to
+// the importer, so assigning to it from loop.js would throw every frame.
+// AppState.alignTween = { startTime, duration, items: [{pivot,start,delta}], pivots: Set }
 
 export function startAlignAnimation() {
   const targetAngle = 0;
@@ -137,7 +121,7 @@ export function startAlignAnimation() {
     const delta = ((targetAngle - start + Math.PI) % (Math.PI * 2) + Math.PI * 2) % (Math.PI * 2) - Math.PI;
     return { pivot, start, delta };
   });
-  alignTween = { startTime: performance.now(), duration: 2600, items, pivots: new Set(items.map((i) => i.pivot)) };
+  AppState.alignTween = { startTime: performance.now(), duration: 2600, items, pivots: new Set(items.map((i) => i.pivot)) };
   showToast("✨ Aligning the planets…", "Watch them swing into a straight line from the Sun.", 3200);
 }
 

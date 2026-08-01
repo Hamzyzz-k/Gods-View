@@ -6,7 +6,7 @@ import { ORBIT_SPEED_SCALE, SELF_SPIN_SCALE, ISS_ORBIT_SPEED } from "../scene/pl
 import { asteroidBelt } from "../scene/asteroidBelt.js";
 import { paused, speedMultiplier } from "../ui/desktopControls.js";
 import {
-  checkPlanetAlignments, checkEclipse, easeInOutCubic, alignTween,
+  checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
   sunLightTargetIntensity, ambientTargetIntensity,
 } from "../scene/alignmentsAndEclipses.js";
@@ -26,7 +26,7 @@ export function animate() {
     sun.rotation.y += 0.05 * dt;
 
     planets.forEach(({ mesh, pivot, data }) => {
-      if (!(alignTween && alignTween.pivots.has(pivot))) {
+      if (!(AppState.alignTween && AppState.alignTween.pivots.has(pivot))) {
         pivot.rotation.y += data.speed * ORBIT_SPEED_SCALE * dt;
       }
       mesh.rotation.y += (1 / data.radius) * SELF_SPIN_SCALE * dt;
@@ -50,13 +50,13 @@ export function animate() {
 
     // ---- the "Align Planets" tween overrides the normal per-frame
     // increments above with an eased interpolation instead ----
-    if (alignTween) {
-      const t = Math.min(1, (performance.now() - alignTween.startTime) / alignTween.duration);
+    if (AppState.alignTween) {
+      const t = Math.min(1, (performance.now() - AppState.alignTween.startTime) / AppState.alignTween.duration);
       const eased = easeInOutCubic(t);
-      alignTween.items.forEach(({ pivot, start, delta }) => {
+      AppState.alignTween.items.forEach(({ pivot, start, delta }) => {
         pivot.rotation.y = start + delta * eased;
       });
-      if (t >= 1) alignTween = null;
+      if (t >= 1) AppState.alignTween = null;
     }
 
     // ---- detect real-time planetary alignments & Sun-Earth-Moon eclipses ----

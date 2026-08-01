@@ -1,5 +1,7 @@
 import { AppState } from "../core/state.js";
 import { sceneRegistry } from "../assistant/sceneRegistry.js";
+import { issProxyMesh } from "../scene/planetFactory.js";
+import { focusOnObject } from "../interaction/focus.js";
 import { orbitLines } from "../scene/planetFactory.js";
 const { controls } = AppState;
 

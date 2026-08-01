@@ -43,3 +43,29 @@ put both in git history permanently, where deleting them later does nothing.
 staged content (`git grep --cached`) rather than the working tree. Tell the
 user that any key already exposed in plaintext must be regenerated — removing
 it from code does not un-leak it.
+
+## Exported `let` is read-only to importers — this bit twice
+
+**Mistake:** In one big file, any function could assign to any top-level
+`let`. After the split, an importer assigning to an imported binding throws
+`TypeError: Assignment to constant variable`. It happened twice:
+
+- `orbitLinesVisible`, written by both the scene registry and desktop
+  controls — caught before shipping.
+- `alignTween`, cleared by the frame loop with `alignTween = null`. Because
+  the loop runs every frame and the assignment always threw, the tween never
+  cleared and the error repeated indefinitely — the user saw it ~5000 times
+  after clicking "Align Planets".
+
+**Rule:** When splitting a file, any variable that is *written* from more
+than one module must move to `AppState`. Only single-writer values may stay
+as exported `let` bindings. After any such split, grep for assignments to
+imported names before declaring it done.
+
+## Verify a test's own logic before trusting a failure
+
+Twice a check reported a problem that did not exist: `includes('...')`
+matched a string inside a *comment*, and `clickableMeshes.includes(x)` was
+checking a value the module never re-exported (so `undefined`). Before
+reporting or "fixing" a failure, confirm the assertion itself is measuring
+what it claims to.
