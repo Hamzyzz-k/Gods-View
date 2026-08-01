@@ -7,12 +7,15 @@ import { asteroidBelt } from "../scene/asteroidBelt.js";
 import { paused, speedMultiplier } from "../ui/desktopControls.js";
 import { updateFocus } from "../interaction/focus.js";
 import { updateLocomotion } from "../xr/locomotion.js";
+import { updateControllerRaycast } from "../xr/controllerRaycast.js";
+import { updateVrControlPanel } from "../xr/vrControlPanel.js";
+import { updateVrInfoPanel } from "../xr/vrInfoPanel.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
   sunLightTargetIntensity, ambientTargetIntensity,
 } from "../scene/alignmentsAndEclipses.js";
-const { scene, camera, renderer, controls, sunLight, ambient } = AppState;
+const { scene, camera, renderer, controls, sunLight, ambient, rig } = AppState;
 
 // ---------- animation loop ----------
 export const clock = new THREE.Clock();
@@ -82,15 +85,38 @@ export function animate() {
     earthEntry.data._moonMesh.material.color.lerp(targetColor, 0.05);
   }
 
-  // Player-driven flight, VR only. Uses the raw, unscaled delta rather than
-  // the simulation's speedMultiplier-scaled dt above — movement speed is a
-  // property of the player, not of how fast the planets are orbiting, and
-  // this must keep working even while the simulation is paused.
-  if (AppState.xrSession) updateLocomotion(delta);
+  if (AppState.xrSession) {
+    // The renderer updates the camera and controllers' LOCAL transforms from
+    // this frame's XR pose before our callback runs, but WORLD matrices
+    // (matrixWorld) are otherwise only propagated inside renderer.render() —
+    // which runs at the end of this function, after locomotion/raycasting
+    // below have already read camera/controller world position and
+    // orientation. Forcing it here rather than trusting undocumented
+    // three.js internal ordering is what makes those reads reliably current
+    // for this frame instead of one frame stale.
+    rig.updateMatrixWorld(true);
+
+    // Player-driven flight. Uses the raw, unscaled delta rather than the
+    // simulation's speedMultiplier-scaled dt above — movement speed is a
+    // property of the player, not of how fast the planets are orbiting, and
+    // this must keep working even while the simulation is paused.
+    updateLocomotion(delta);
+
+    // Rig may have just moved/turned (locomotion) or eased toward a focus
+    // target (below) — re-propagate so this frame's raycast uses the
+    // controllers' post-movement transforms, not their pre-movement ones.
+    rig.updateMatrixWorld(true);
+    updateControllerRaycast();
+    updateVrControlPanel();
+  }
 
   // Camera focus. Desktop keeps following the target; in an XR session this
   // instead steps the one-shot rig fly-to. See interaction/focus.js.
   updateFocus();
+  if (AppState.xrSession) {
+    rig.updateMatrixWorld(true); // focus may have moved the rig again just above
+    updateVrInfoPanel();
+  }
 
   // OrbitControls is meaningless during an XR session — the headset owns the
   // camera — and sessionManager disables it on session start, but this guard

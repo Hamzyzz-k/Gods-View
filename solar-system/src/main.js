@@ -56,4 +56,14 @@ await initXR();
 const { initLocomotion } = await import("./xr/locomotion.js");
 initLocomotion();
 
+// In-world panels + laser picking. Also safe with no VR support: everything
+// they create just sits invisible (mesh.visible = false) until a session
+// exists to show it in.
+const { initVrControlPanel } = await import("./xr/vrControlPanel.js");
+initVrControlPanel();
+const { initVrInfoPanel } = await import("./xr/vrInfoPanel.js");
+initVrInfoPanel();
+const { initControllerRaycast } = await import("./xr/controllerRaycast.js");
+initControllerRaycast();
+
 await import("./core/loop.js");
