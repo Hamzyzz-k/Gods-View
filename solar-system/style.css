@@ -439,6 +439,33 @@ canvas {
   filter: brightness(1.08);
 }
 
+/* Higher-specificity selector (#agentForm #agentMicBtn) so this overrides
+   the generic "#agentForm button" gradient above without !important. */
+#agentForm #agentMicBtn {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e8ecf7;
+  font-weight: 400;
+  flex: 0 0 auto;
+}
+
+#agentForm #agentMicBtn.listening {
+  background: rgba(255,90,90,0.25);
+  border-color: #ff6b6b;
+  animation: micPulse 1.2s ease-in-out infinite;
+}
+
+#agentForm #agentMicBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  filter: none;
+}
+
+@keyframes micPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,107,0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(255,107,107,0); }
+}
+
 /* thin scrollbar for the agent log */
 #agentLog::-webkit-scrollbar {
   width: 6px;

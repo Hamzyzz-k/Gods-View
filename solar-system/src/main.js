@@ -38,6 +38,7 @@ await import("./data/spaceNews.js");
 await import("./assistant/localParser.js");
 await import("./assistant/runCommand.js");
 await import("./audio/ambientAudio.js");
+await import("./voice/desktopMic.js");
 
 // Events + frame loop (must be last — the loop drives everything above)
 await import("./scene/alignmentsAndEclipses.js");
@@ -65,5 +66,13 @@ const { initVrInfoPanel } = await import("./xr/vrInfoPanel.js");
 initVrInfoPanel();
 const { initControllerRaycast } = await import("./xr/controllerRaycast.js");
 initControllerRaycast();
+
+// Voice push-to-talk, bound to controller squeeze — see xr/vrVoiceControl.js
+// for why that button and not trigger/thumbstick. Same "inert without a
+// session" safety as everything else above.
+const { initVrVoiceIndicator } = await import("./xr/vrVoiceIndicator.js");
+initVrVoiceIndicator();
+const { initVrVoiceControl } = await import("./xr/vrVoiceControl.js");
+initVrVoiceControl();
 
 await import("./core/loop.js");
