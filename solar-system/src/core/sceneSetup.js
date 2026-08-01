@@ -15,6 +15,24 @@ export function initScene() {
   );
   camera.position.set(0, 60, 140);
 
+  // ---------- camera rig ----------
+  // The camera hangs off a parent Group ("rig") rather than sitting directly
+  // in the scene. This exists for WebXR: during an immersive session the
+  // headset owns camera.position and camera.quaternion outright, and anything
+  // we write to them is overwritten from the device pose every frame. Moving
+  // the player therefore means moving the rig, and the headset pose is applied
+  // relative to it.
+  //
+  // Outside a session the rig stays at the identity transform, so a camera
+  // local position of (0,60,140) is also its world position, and OrbitControls
+  // — which reads and writes camera.position directly with no knowledge of
+  // parents — behaves exactly as it did before the rig existed. That is what
+  // keeps the desktop experience bit-for-bit unchanged.
+  const rig = new THREE.Group();
+  rig.name = "cameraRig";
+  rig.add(camera);
+  scene.add(rig);
+
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
@@ -37,6 +55,7 @@ export function initScene() {
 
   AppState.scene = scene;
   AppState.camera = camera;
+  AppState.rig = rig;
   AppState.renderer = renderer;
   AppState.controls = controls;
   AppState.sunLight = sunLight;

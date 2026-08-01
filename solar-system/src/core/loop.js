@@ -5,6 +5,7 @@ import { planets, earthEntry } from "../scene/planetFactory.js";
 import { ORBIT_SPEED_SCALE, SELF_SPIN_SCALE, ISS_ORBIT_SPEED } from "../scene/planetData.js";
 import { asteroidBelt } from "../scene/asteroidBelt.js";
 import { paused, speedMultiplier } from "../ui/desktopControls.js";
+import { updateFocus } from "../interaction/focus.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
@@ -74,23 +75,14 @@ export function animate() {
     earthEntry.data._moonMesh.material.color.lerp(targetColor, 0.05);
   }
 
-  if (AppState.focusedTarget) {
-    const worldPos = new THREE.Vector3();
-    AppState.focusedTarget.getWorldPosition(worldPos);
-    controls.target.lerp(worldPos, 0.08);
+  // Camera focus. Desktop keeps following the target; in an XR session this
+  // instead steps the one-shot rig fly-to. See interaction/focus.js.
+  updateFocus();
 
-    if (AppState.desiredZoomDistance !== null) {
-      const currentDir = new THREE.Vector3()
-        .subVectors(camera.position, controls.target)
-        .normalize();
-      const desiredPos = new THREE.Vector3()
-        .copy(worldPos)
-        .add(currentDir.multiplyScalar(AppState.desiredZoomDistance));
-      camera.position.lerp(desiredPos, 0.05);
-    }
-  }
-
-  controls.update();
+  // OrbitControls is meaningless during an XR session — the headset owns the
+  // camera — and sessionManager disables it on session start, but this guard
+  // means the loop is correct on its own terms regardless.
+  if (!AppState.xrSession) controls.update();
   renderer.render(scene, camera);
 }
 
