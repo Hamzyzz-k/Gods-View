@@ -46,10 +46,17 @@ export function formatBodyFacts(raw) {
   };
 }
 
+// Set once the facts function turns out not to be deployed (404), e.g. when
+// the site is served as plain static files with no Netlify runtime. Without
+// this, every planet click would fire another doomed request and log another
+// 404 to the console. Resets on reload, so a real deployment is unaffected.
+let factsBackendAvailable = true;
+
 export async function fetchBodyFacts(name) {
   const key = name.toLowerCase();
   if (!FACTS_ELIGIBLE.has(key)) return null;
   if (bodyFactsCache[key]) return bodyFactsCache[key];
+  if (!factsBackendAvailable) return null;
   try {
     // Goes through a Netlify Function rather than straight to
     // api.le-systeme-solaire.net: that API made bearer-token auth mandatory
@@ -57,6 +64,10 @@ export async function fetchBodyFacts(name) {
     // The function returns 204 when no token is configured, in which case we
     // simply skip the verified-stats chips.
     const res = await fetch(`/.netlify/functions/facts?body=${encodeURIComponent(key)}`);
+    if (res.status === 404) {
+      factsBackendAvailable = false; // no functions runtime — stop asking
+      return null;
+    }
     if (res.status === 204) return null;
     if (!res.ok) throw new Error("Solar System OpenData error " + res.status);
     const raw = await res.json();

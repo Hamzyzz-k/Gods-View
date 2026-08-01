@@ -62,7 +62,7 @@ export function interpretCommand(raw) {
   if (questionMatch) {
     const word = questionMatch[1];
     const target =
-      word === "this" || word === "it" ? focusedTarget?.name?.toLowerCase() : word.includes("station") ? "iss" : word;
+      word === "this" || word === "it" ? AppState.focusedTarget?.name?.toLowerCase() : word.includes("station") ? "iss" : word;
     const info =
       target === "sun"
         ? sunInfo

@@ -183,7 +183,7 @@ ambientToggleBtn.addEventListener("click", () => {
   localStorage.setItem("ambientMuted", String(ambientMuted));
   updateAmbientButton();
   AmbientAudio.setMuted(ambientMuted);
-  if (!ambientMuted && focusedTarget?.userData?.info) {
-    AmbientAudio.start(focusedTarget.userData.info.name.toLowerCase());
+  if (!ambientMuted && AppState.focusedTarget?.userData?.info) {
+    AmbientAudio.start(AppState.focusedTarget.userData.info.name.toLowerCase());
   }
 });

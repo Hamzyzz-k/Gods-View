@@ -72,13 +72,23 @@ export function applyActions(actions) {
   });
 }
 
+// Cleared once the assistant function turns out not to be deployed, so a
+// static build (no Netlify runtime) logs one 404 instead of one per message
+// and goes straight to the local parser thereafter. Resets on reload.
+let assistantBackendAvailable = true;
+
 export async function callAssistant(command) {
+  if (!assistantBackendAvailable) throw new Error("Assistant backend unavailable");
   const context = await getSceneContext();
   const res = await fetch(ASSISTANT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ command, context }),
   });
+  if (res.status === 404) {
+    assistantBackendAvailable = false;
+    throw new Error("Assistant function not deployed");
+  }
   if (!res.ok) throw new Error("Assistant error " + res.status);
   const data = await res.json();
   // Tolerate a result nested under "output" as well as a flat body.
