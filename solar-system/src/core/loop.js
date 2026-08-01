@@ -6,6 +6,7 @@ import { ORBIT_SPEED_SCALE, SELF_SPIN_SCALE, ISS_ORBIT_SPEED } from "../scene/pl
 import { asteroidBelt } from "../scene/asteroidBelt.js";
 import { paused, speedMultiplier } from "../ui/desktopControls.js";
 import { updateFocus } from "../interaction/focus.js";
+import { updateLocomotion } from "../xr/locomotion.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
@@ -80,6 +81,12 @@ export function animate() {
     const targetColor = lunarEclipseActive ? ECLIPSE_MOON_COLOR : earthEntry.data._moonBaseColor;
     earthEntry.data._moonMesh.material.color.lerp(targetColor, 0.05);
   }
+
+  // Player-driven flight, VR only. Uses the raw, unscaled delta rather than
+  // the simulation's speedMultiplier-scaled dt above — movement speed is a
+  // property of the player, not of how fast the planets are orbiting, and
+  // this must keep working even while the simulation is paused.
+  if (AppState.xrSession) updateLocomotion(delta);
 
   // Camera focus. Desktop keeps following the target; in an XR session this
   // instead steps the one-shot rig fly-to. See interaction/focus.js.

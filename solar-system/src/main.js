@@ -50,4 +50,10 @@ await import("./core/resize.js");
 const { initXR } = await import("./xr/sessionManager.js");
 await initXR();
 
+// Safe to call even when initXR found no VR support: getController() just
+// returns an (unused) XRTargetRaySpace that never receives input without an
+// active session, so this never needs its own support guard.
+const { initLocomotion } = await import("./xr/locomotion.js");
+initLocomotion();
+
 await import("./core/loop.js");
