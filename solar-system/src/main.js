@@ -42,4 +42,12 @@ await import("./audio/ambientAudio.js");
 // Events + frame loop (must be last — the loop drives everything above)
 await import("./scene/alignmentsAndEclipses.js");
 await import("./core/resize.js");
+
+// WebXR must be initialised BEFORE the loop starts: renderer.xr.enabled has to
+// be true before setAnimationLoop is called, or session frames are never
+// delivered. initXR resolves false (without throwing) on any browser that
+// cannot do VR, in which case nothing else here changes.
+const { initXR } = await import("./xr/sessionManager.js");
+await initXR();
+
 await import("./core/loop.js");

@@ -16,8 +16,14 @@ const { scene, camera, renderer, controls, sunLight, ambient } = AppState;
 // ---------- animation loop ----------
 export const clock = new THREE.Clock();
 
+// Note there is no requestAnimationFrame call in here. The loop is driven by
+// renderer.setAnimationLoop() at the bottom of this file, which is required
+// for WebXR: once a session starts, frames must be scheduled by the headset's
+// own XR frame loop (which runs at the device's refresh rate, e.g. 72/90/120Hz
+// and continues while the browser tab is not the foreground page), not by the
+// window's rAF. Outside a session three.js drives this with rAF internally,
+// so desktop timing is unchanged.
 export function animate() {
-  requestAnimationFrame(animate);
   const delta = clock.getDelta();
 
   if (!paused) {
@@ -86,4 +92,8 @@ export function animate() {
   renderer.render(scene, camera);
 }
 
-animate();
+// Starts the loop, and hands frame scheduling to the XR device automatically
+// whenever a session is active. Passing the function here (rather than calling
+// animate() once and self-scheduling with rAF) is what makes VR possible at
+// all — three.js swaps the underlying scheduler on session start/end for us.
+renderer.setAnimationLoop(animate);
