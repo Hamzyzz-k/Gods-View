@@ -1,18 +1,15 @@
 import { ASSISTANT_ENDPOINT } from "./config.js";
 import { AppState } from "../core/state.js";
 import { sun } from "../scene/sun.js";
-import { planets } from "../scene/planetFactory.js";
+import { planets, issProxyMesh } from "../scene/planetFactory.js";
 import { sceneRegistry, setGroupVisible, setAllPlanetsVisible, setOrbitLinesVisible } from "./sceneRegistry.js";
-import { interpretCommand, extractTargets } from "./localParser.js";
+import { interpretCommand, lastReplyWasAnswer } from "./localParser.js";
 import { focusOnObject, clearFocus } from "../interaction/focus.js";
 import { fetchBodyFacts } from "../data/bodyFacts.js";
 import { fetchISSLive } from "../data/issLive.js";
 import { speak } from "../voice/tts.js";
 
-// ---------- optional: real LLM agent via an n8n webhook ----------
-// Paste your n8n Production webhook URL here to upgrade from the local
-// parser above to a real LLM-backed agent. Leave it empty ("") to keep
-// using the local parser only.
+// ---------- LLM agent via the Gemini-backed Netlify Function ----------
 
 export async function getSceneContext() {
   const visible = [];
@@ -20,7 +17,7 @@ export async function getSceneContext() {
   Object.entries(sceneRegistry).forEach(([name, obj]) => {
     (obj.isVisible() ? visible : hidden).push(name);
   });
-  const focused = focusedTarget?.name?.toLowerCase() || null;
+  const focused = AppState.focusedTarget?.name?.toLowerCase() || null;
   // Real numbers for whatever's currently focused, so the AI can ground an
   // answer instead of guessing — cached after the first lookup, so usually instant.
   const focusedFacts =
@@ -28,7 +25,7 @@ export async function getSceneContext() {
   return { visible, hidden, orbitLinesVisible: AppState.orbitLinesVisible, focused, focusedFacts };
 }
 
-// Applies the { actions: [...] } array returned by the n8n webhook to the scene.
+// Applies the { actions: [...] } array returned by the assistant to the scene.
 export function applyActions(actions) {
   if (!Array.isArray(actions)) return;
   actions.forEach((action) => {
@@ -75,16 +72,16 @@ export function applyActions(actions) {
   });
 }
 
-export async function callAgentWebhook(command) {
+export async function callAssistant(command) {
   const context = await getSceneContext();
   const res = await fetch(ASSISTANT_ENDPOINT, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ command, context }),
   });
-  if (!res.ok) throw new Error("Webhook error " + res.status);
+  if (!res.ok) throw new Error("Assistant error " + res.status);
   const data = await res.json();
-  // n8n's Structured Output Parser nests the result under "output"
+  // Tolerate a result nested under "output" as well as a flat body.
   const result = data.output || data;
   applyActions(result.actions);
   // No actions returned means the AI just answered a question rather than
@@ -113,13 +110,13 @@ export async function runCommand(command) {
   if (ASSISTANT_ENDPOINT) {
     const pending = logMessage("…", "agent");
     try {
-      const { text, isAnswer } = await callAgentWebhook(command);
+      const { text, isAnswer } = await callAssistant(command);
       pending.textContent = text;
       if (isAnswer) pending.classList.add("answer");
       speak(text);
     } catch (err) {
       const fallback = interpretCommand(command);
-      pending.textContent = `${fallback} (webhook unreachable — used local fallback)`;
+      pending.textContent = `${fallback} (AI assistant unreachable — used local fallback)`;
       if (lastReplyWasAnswer) pending.classList.add("answer");
       speak(fallback);
     }

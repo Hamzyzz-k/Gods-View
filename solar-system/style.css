@@ -447,92 +447,9 @@ canvas {
   background: rgba(255,255,255,0.2);
   border-radius: 3px;
 }
-
-#apodModal {
-  position: fixed;
-  inset: 0;
-  z-index: 30;
-  display: none;
-  align-items: center;
-  justify-content: center;
-}
-
-#apodModal.visible {
-  display: flex;
-}
-
-#apodBackdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(4px);
-}
-
-#apodCard {
-  position: relative;
-  z-index: 1;
-  width: min(560px, 90vw);
-  max-height: 82vh;
-  overflow-y: auto;
-  background: rgba(14, 16, 28, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  border-radius: 14px;
-  padding: 20px 22px;
-  color: #e8ecf7;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
-}
-
-#apodClose {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  background: none;
-  border: none;
-  color: #e8ecf7;
-  font-size: 20px;
-  cursor: pointer;
-  opacity: 0.6;
-  line-height: 1;
-}
-
-#apodClose:hover {
-  opacity: 1;
-}
-
-#apodBody img {
-  width: 100%;
-  border-radius: 10px;
-  display: block;
-  margin-bottom: 14px;
-}
-
-#apodBody h3 {
-  font-size: 17px;
-  margin-bottom: 4px;
-  background: linear-gradient(90deg, #ffd27a, #7ab8ff);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-#apodBody .apod-date {
+/* Attribution line at the foot of a modal. */
+.modal-credit {
   font-size: 11px;
-  opacity: 0.55;
-  margin-bottom: 10px;
-}
-
-#apodBody p {
-  font-size: 13px;
-  line-height: 1.55;
-  opacity: 0.9;
-}
-
-#apodBody a {
-  color: #7ab8ff;
-}
-
-#apodBody .apod-credit {
-  font-size: 10px;
   opacity: 0.45;
   margin-top: 12px;
 }

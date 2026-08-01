@@ -15,7 +15,10 @@ const { scene } = AppState;
 
 export const PLANET_NAMES = planets.map((p) => p.data.name.toLowerCase());
 export const INNER_PLANETS = ["mercury", "venus", "earth", "mars"];
-export const OUTER_PLANETS = ["jupiter", "saturn", "uranus", "neptune"];
+// Pluto is included here to match how people actually say "outer planets",
+// even though it is a dwarf planet and not one of the eight IAU planets.
+// Keep this in sync with the vocabulary in netlify/functions/assistant.js.
+export const OUTER_PLANETS = ["jupiter", "saturn", "uranus", "neptune", "pluto"];
 
 // name -> { setVisible(bool) }
 export const sceneRegistry = {};

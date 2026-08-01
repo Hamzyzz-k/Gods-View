@@ -4,8 +4,8 @@ import { getTexture, ringTexture, earthCloudsTexture, crateredPlanet, crateredHe
 import { PLANET_TEXTURE_FACTORIES, PLANET_BUMP_FACTORIES } from "../textures/textureMaps.js";
 import { loadRealTexture, REAL_TEXTURE_URLS } from "../textures/realTextures.js";
 import { createISSModel } from "./issModel.js";
-import { createAtmosphere } from "./sun.js";
-import { planetData, ISS_INFO, ORBIT_SPEED_SCALE, SELF_SPIN_SCALE, ISS_ORBIT_SPEED } from "./planetData.js";
+import { sun, createAtmosphere } from "./sun.js";
+import { planetData, sunInfo, ISS_INFO, ORBIT_SPEED_SCALE, SELF_SPIN_SCALE, ISS_ORBIT_SPEED } from "./planetData.js";
 const { scene } = AppState;
 
 export const planets = []; // { mesh, pivot, data, angle }
@@ -242,6 +242,10 @@ export function createPlanet(data) {
 }
 
 planetData.forEach(createPlanet);
+
+// The sun is built in sun.js but its info-panel payload is attached here,
+// alongside the planets', so every clickable body carries the same shape.
+sun.userData.info = { name: "Sun", ...sunInfo };
 
 // Earth is looked up by name in several places (moon-colour tinting during a
 // lunar eclipse, the ISS raycast proxy), so resolve it once here.

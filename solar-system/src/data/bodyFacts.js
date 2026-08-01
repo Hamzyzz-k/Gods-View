@@ -5,7 +5,7 @@ export function formatNumber(n) {
 
 // ---------- real astronomical facts (Solar System OpenData API, no key needed) ----------
 // Used two ways: (1) layered onto the info panel as verified numbers, and
-// (2) sent to the n8n agent as grounding data so it answers with real figures
+// (2) sent to the AI assistant as grounding data so it answers with real figures
 // instead of the LLM guessing when a planet is focused.
 export const SSOD_CACHE_KEY = "solar-system-body-facts-v1";
 export const SSOD_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // this data barely changes — cache a full day

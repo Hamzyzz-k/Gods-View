@@ -55,7 +55,7 @@ export function interpretCommand(raw) {
   }
 
   // Informational questions ("tell me about Saturn", "what is this?") — answered
-  // from local planet data so this works even with no webhook configured.
+  // from local planet data so this works even with no backend configured.
   const questionMatch = text.match(
     /\b(?:tell me about|what is|what's|who is|who's|explain)\s+(?:the\s+)?(international space station|space station|\w+)/
   );
@@ -71,7 +71,7 @@ export function interpretCommand(raw) {
         : planets.find((p) => p.data.name.toLowerCase() === target)?.data;
     if (info) {
       lastReplyWasAnswer = true;
-      return ASSISTANT_ENDPOINT ? info.info : `${info.info} (Connect the AI webhook for open-ended astronomy questions beyond the planets.)`;
+      return ASSISTANT_ENDPOINT ? info.info : `${info.info} (Connect the AI assistant for open-ended astronomy questions beyond the planets.)`;
     }
   }
 

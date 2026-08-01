@@ -6,31 +6,33 @@ import { AmbientAudio } from "../audio/ambientAudio.js";
 // floating button (top-right) mutes/unmutes both; muting also stops
 // whatever's currently being read.
 //
-// Two engines, tried in order:
-//   1. ElevenLabs (natural AI voice) — only used if ELEVENLABS_API_KEY is set.
-//   2. Browser's built-in Web Speech API — free, offline, no key, used as the
-//      automatic fallback if ElevenLabs isn't configured OR its call fails
-//      (rate limit, network error, bad key, etc.), same pattern as the
-//      n8n-webhook → local-parser fallback for the chat agent above.
+// Two engines:
+//   "webspeech"  — the browser's built-in SpeechSynthesis. Free, offline, no
+//                  key, no billing. This is the default.
+//   "elevenlabs" — natural AI voice, proxied through a Netlify Function so
+//                  the API key stays server-side (the key used to sit in
+//                  plain text in the shipped JS, where anyone could lift it
+//                  from devtools).
 //
-// ⚠️ SECURITY NOTE: unlike the NASA DEMO_KEY, an ElevenLabs key is billed
-// per character and this calls its REST API directly from the browser, so
-// the key sits in plain text in the shipped JS bundle — anyone can open
-// devtools and lift it. That's fine for a personal demo, but before sharing
-// this publicly, proxy the call through a backend instead (e.g. add a
-// second n8n webhook that holds the key server-side and forwards
-// {text} -> audio, mirroring how N8N_WEBHOOK_URL already proxies the chat
-// agent). See "Open items" in the context doc.
-export const ELEVENLABS_API_KEY = ""; // moved server-side — see netlify/functions/tts.js. Empty here falls back to Web Speech.
-export const ELEVENLABS_VOICE_ID = "cT5LqmY8Y5dz4bRVJKSy"; // "Rachel" — a default premade voice, free-tier API friendly. IMPORTANT: swap only with voice_ids from your dashboard's "My Voices" tab — "Voice Library" (shared/community) voices return a 402 error on the free API tier
-export const ELEVENLABS_MODEL_ID = "eleven_turbo_v2_5"; // fast + natural; use "eleven_multilingual_v2" if you want non-English narration
+// ElevenLabs bills per character, so it stays off by default and the browser
+// voice is used instead. To switch (e.g. before a presentation), run this in
+// the console and reload:
+//
+//   localStorage.setItem("ttsEngine", "elevenlabs")
+//
+// and set ELEVENLABS_API_KEY in the Netlify dashboard. If the proxy is
+// unconfigured or errors for any reason, speak() silently falls back to the
+// browser voice rather than going silent.
+export const TTS_PROXY_ENDPOINT = "/.netlify/functions/tts";
+export const ttsEngine = localStorage.getItem("ttsEngine") || "webspeech";
+export const usingElevenLabs = ttsEngine === "elevenlabs";
 
 export const ttsToggleBtn = document.getElementById("ttsToggleBtn");
 export const ttsSupported = "speechSynthesis" in window;
 export let ttsMuted = localStorage.getItem("ttsMuted") === "true";
 
 export function updateTtsButton() {
-  if (!ttsSupported && !ELEVENLABS_API_KEY) {
+  if (!ttsSupported && !usingElevenLabs) {
     ttsToggleBtn.textContent = "🔇";
     ttsToggleBtn.title = "Voice narration isn't supported in this browser";
     ttsToggleBtn.classList.add("muted");
@@ -54,22 +56,16 @@ export let speakToken = 0; // bumped on every speak()/mute so a slow in-flight f
 
 export async function fetchElevenLabsAudio(text) {
   if (ttsAudioCache.has(text)) return ttsAudioCache.get(text);
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`, {
+  // Voice id and model live server-side in the proxy — the browser only ever
+  // sends the text to speak.
+  const res = await fetch(TTS_PROXY_ENDPOINT, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "audio/mpeg",
-      "xi-api-key": ELEVENLABS_API_KEY,
-    },
-    body: JSON.stringify({
-      text,
-      model_id: ELEVENLABS_MODEL_ID,
-      voice_settings: { stability: 0.5, similarity_boost: 0.75 },
-    }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ text }),
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`ElevenLabs TTS error ${res.status}: ${body}`);
+    throw new Error(`TTS proxy error ${res.status}: ${body}`);
   }
   const blob = await res.blob();
   const url = URL.createObjectURL(blob);
@@ -103,7 +99,7 @@ export async function speak(text) {
   stopSpeaking(); // don't let lines overlap — new speech interrupts whatever was playing
   if (ttsMuted) return;
 
-  if (ELEVENLABS_API_KEY) {
+  if (usingElevenLabs) {
     ttsToggleBtn.classList.add("loading");
     try {
       const url = await fetchElevenLabsAudio(text);
@@ -147,7 +143,7 @@ export function stopSpeaking() {
   AmbientAudio.duck(false);
 }
 
-if (ttsSupported || ELEVENLABS_API_KEY) {
+if (ttsSupported || usingElevenLabs) {
   ttsToggleBtn.addEventListener("click", () => {
     ttsMuted = !ttsMuted;
     localStorage.setItem("ttsMuted", String(ttsMuted));
