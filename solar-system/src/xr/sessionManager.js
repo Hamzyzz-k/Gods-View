@@ -24,6 +24,16 @@ let vrButtonEl = null;
 // on exit. Declared here rather than at the bottom so it reads in order.
 let savedDesktopView = null;
 
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function checkSupportOnce() {
+  try {
+    return await navigator.xr.isSessionSupported("immersive-vr");
+  } catch {
+    return false; // a half-injected emulator can throw rather than resolve false
+  }
+}
+
 // Guards against initialising twice. Two sets of session handlers would both
 // write savedDesktopView on sessionstart — the second overwriting the first
 // with the already-zeroed camera position — and the desktop view would be
@@ -44,32 +54,53 @@ export async function initXR() {
     return false;
   }
 
-  let supported = false;
-  try {
-    supported = await navigator.xr.isSessionSupported("immersive-vr");
-  } catch (err) {
-    // Some emulator builds throw here rather than resolving false.
-    console.info("WebXR support check failed — desktop mode only.", err);
-    return false;
+  if (await checkSupportOnce()) {
+    activate();
+    return true;
   }
 
-  if (!supported) {
-    console.info("immersive-vr not supported here — desktop mode only.");
-    return false;
-  }
+  // Emulator extensions (IWER, the old WebXR API Emulator) inject their
+  // navigator.xr shim as a content script, which can still be wiring itself
+  // up at the exact moment this module's top-level code runs — a page-load
+  // race, not a real "unsupported" answer. But retrying inline would delay
+  // startup for every plain desktop browser too (the common case, and the one
+  // that genuinely has no VR), so instead this returns the normal "no VR"
+  // result immediately and keeps checking a few more times in the
+  // background. If one of those later succeeds, the button appears on its
+  // own with no reload needed; if not, nothing more happens.
+  console.info("immersive-vr not supported here (yet) — desktop mode only.");
+  retryInBackground();
+  return false;
+}
 
+async function retryInBackground(attempts = 6, delayMs = 400) {
+  for (let i = 0; i < attempts; i++) {
+    await sleep(delayMs);
+    if (initialised) return; // a later real check already succeeded
+    if (await checkSupportOnce()) {
+      console.info("immersive-vr became available — enabling VR.");
+      activate();
+      return;
+    }
+  }
+}
+
+function activate() {
+  // Belt-and-braces: initXR() and the background retry loop can both reach
+  // here (e.g. initXR called again mid-retry). Only the first call should
+  // ever create a button.
+  if (initialised) return;
+  const { renderer } = AppState;
   try {
     vrButtonEl = VRButton.createButton(renderer);
     vrButtonEl.id = "vrButton";
     document.body.appendChild(vrButtonEl);
   } catch (err) {
     console.warn("Could not create the VR button:", err);
-    return false;
+    return;
   }
-
   registerSessionHandlers();
   initialised = true;
-  return true;
 }
 
 function registerSessionHandlers() {
