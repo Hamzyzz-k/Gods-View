@@ -16,20 +16,36 @@ import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
 // VR comfort complaint. Parented to the rig instead, it behaves like a
 // console mounted in front of the player: it comes along as they fly and
 // turns when they turn (rig yaw), but doesn't jitter with small head
-// movements, and sits in the upper part of the default forward view as
-// requested. THREE.PlaneGeometry's front face points toward +Z by default;
+// movements. THREE.PlaneGeometry's front face points toward +Z by default;
 // placed at local -Z from the rig with no rotation, that face already looks
 // back toward the player, so no extra rotation is needed.
-const LOCAL_POSITION = [0, 1.6, -2.0]; // 1.6m is a reasonable average standing eye height; forward 2m keeps it reachable by a laser without the player having to lunge
+//
+// Y is NOT a fixed guess. An earlier version hardcoded 1.6m as "average eye
+// height" — which put it AT eye level, dead center of the forward view,
+// blocking the scene rather than sitting above it as intended. The actual
+// eye height is whatever the real headset reports (unknown until a real
+// session runs), so this instead tracks the camera's live local Y each frame
+// and adds a fixed offset above it — correct regardless of the player's
+// actual height, and reliably out of the primary view instead of in it.
+const FORWARD_Z = -2.6; // slightly further than before, so the smaller panel is still comfortably readable
+const HEIGHT_ABOVE_EYES = 0.55; // look-up angle at FORWARD_Z: atan(0.55/2.6) ≈ 12°, a glance, not a stretch
 
+// Icon-only, no text label. The original design drew an icon plus a label
+// next to it sized off the button's HEIGHT — fine for a short, wide pill,
+// but this row of 7 buttons actually came out much TALLER than each one is
+// WIDE, so the label position (computed from height) landed far outside the
+// button's own width and overlapped its neighbor. Rather than patch that
+// math for a shape it was never designed for, buttons are square icons now:
+// simpler, always fits, and state is still visible via the highlight color
+// plus the icon itself (e.g. pause swaps to a play glyph).
 const BUTTONS = [
-  { domId: "pauseBtn", label: () => document.getElementById("pauseBtn")?.textContent || "Pause", icon: "⏯" },
-  { domId: "orbitBtn", label: () => "Orbits", icon: "🛰", active: () => AppState.orbitLinesVisible },
-  { domId: "moonsBtn", label: () => "Moons", icon: "🌙", active: () => isBtnActive("moonsBtn") },
-  { domId: "constellationBtn", label: () => "Stars", icon: "✨", active: () => isBtnActive("constellationBtn") },
-  { domId: "issBtn", label: () => "Locate ISS", icon: "📡" },
-  { domId: "ttsToggleBtn", label: () => "Voice", icon: () => document.getElementById("ttsToggleBtn")?.textContent || "🔊", active: () => !document.getElementById("ttsToggleBtn")?.classList.contains("muted") },
-  { domId: "ambientToggleBtn", label: () => "Ambience", icon: () => document.getElementById("ambientToggleBtn")?.textContent || "🪐", active: () => !document.getElementById("ambientToggleBtn")?.classList.contains("muted") },
+  { domId: "pauseBtn", icon: () => (document.getElementById("pauseBtn")?.textContent === "Resume" ? "▶" : "⏸") },
+  { domId: "orbitBtn", icon: "🛰", active: () => AppState.orbitLinesVisible },
+  { domId: "moonsBtn", icon: "🌙", active: () => isBtnActive("moonsBtn") },
+  { domId: "constellationBtn", icon: "✨", active: () => isBtnActive("constellationBtn") },
+  { domId: "issBtn", icon: "📡" },
+  { domId: "ttsToggleBtn", icon: () => document.getElementById("ttsToggleBtn")?.textContent || "🔊", active: () => !document.getElementById("ttsToggleBtn")?.classList.contains("muted") },
+  { domId: "ambientToggleBtn", icon: () => document.getElementById("ambientToggleBtn")?.textContent || "🪐", active: () => !document.getElementById("ambientToggleBtn")?.classList.contains("muted") },
 ];
 
 // The desktop toggle buttons don't carry an explicit "on/off" CSS class today
@@ -42,20 +58,36 @@ function isBtnActive(domId) {
   return true;
 }
 
-const PADDING = 24;
-const GAP = 16;
+const PADDING = 20;
+const GAP = 14;
+const CELL = 130; // square button, canvas px
 
-export const controlPanel = new VRPanel({ worldWidth: 2.6, worldHeight: 0.62, canvasWidth: 1536 });
+// Sized directly from the button geometry above (7 x 130px cells) rather
+// than picked independently of it — canvasWidth/Height are computed from the
+// actual content, so there's no way for the panel to end up too short (or
+// too tall) for its own buttons again. worldWidth is modest on purpose: at
+// FORWARD_Z this spans roughly 24° of horizontal view, a glanceable strip
+// rather than the ~66°-wide bar the original 2.6-unit version worked out to
+// — that was most of the headset's horizontal FOV, which is what "spoils
+// the view" turned out to mean.
+const CANVAS_W = PADDING * 2 + CELL * BUTTONS.length + GAP * (BUTTONS.length - 1);
+const CANVAS_H = PADDING * 2 + CELL;
+export const controlPanel = new VRPanel({
+  worldWidth: 1.1,
+  worldHeight: 1.1 * (CANVAS_H / CANVAS_W),
+  canvasWidth: CANVAS_W,
+  canvasHeight: CANVAS_H,
+});
 controlPanel.mesh.name = "vrControlPanel";
-controlPanel.mesh.position.set(...LOCAL_POSITION);
+controlPanel.mesh.position.set(0, HEIGHT_ABOVE_EYES, FORWARD_Z); // Y corrected every frame in updateVrControlPanel() once real eye height is known
 
 // Populated by redraw(), consumed by controllerRaycast.js for hit-testing —
 // canvas-pixel rectangles, one per button, in the same order as BUTTONS.
 export const buttonHitRects = [];
 
-function drawButton(ctx, x, y, w, h, btn) {
+function drawButton(ctx, x, y, size, btn) {
   const isActive = btn.active ? btn.active() : false;
-  roundRect(ctx, x, y, w, h, h / 2);
+  roundRect(ctx, x, y, size, size, 18);
   ctx.fillStyle = isActive ? COLORS.pillBgActive : COLORS.pillBg;
   ctx.fill();
   ctx.strokeStyle = isActive ? COLORS.blue : COLORS.pillBorder;
@@ -63,39 +95,30 @@ function drawButton(ctx, x, y, w, h, btn) {
   ctx.stroke();
 
   const icon = typeof btn.icon === "function" ? btn.icon() : btn.icon;
-  ctx.font = "44px sans-serif";
+  ctx.font = "58px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillStyle = COLORS.text;
-  ctx.fillText(icon, x + h * 0.55, y + h / 2);
-
-  ctx.font = "28px sans-serif";
-  ctx.textAlign = "left";
-  ctx.fillStyle = isActive ? COLORS.blue : COLORS.textDim;
-  ctx.fillText(btn.label(), x + h * 1.05, y + h / 2);
+  ctx.fillStyle = isActive ? COLORS.blue : COLORS.text;
+  ctx.fillText(icon, x + size / 2, y + size / 2 + 4); // +4: optical centering, most emoji glyphs sit slightly above their own baseline-middle
 }
 
 export function redrawControlPanel() {
   const { ctx, canvasWidth: W, canvasHeight: H } = controlPanel;
   ctx.clearRect(0, 0, W, H);
 
-  roundRect(ctx, 0, 0, W, H, 28);
+  roundRect(ctx, 0, 0, W, H, 24);
   ctx.fillStyle = COLORS.bg;
   ctx.fill();
   ctx.strokeStyle = COLORS.border;
   ctx.lineWidth = 3;
   ctx.stroke();
 
-  const innerW = W - PADDING * 2;
-  const btnW = (innerW - GAP * (BUTTONS.length - 1)) / BUTTONS.length;
-  const btnH = H - PADDING * 2;
-
   buttonHitRects.length = 0;
   BUTTONS.forEach((btn, i) => {
-    const x = PADDING + i * (btnW + GAP);
+    const x = PADDING + i * (CELL + GAP);
     const y = PADDING;
-    drawButton(ctx, x, y, btnW, btnH, btn);
-    buttonHitRects.push({ domId: btn.domId, x, y, w: btnW, h: btnH });
+    drawButton(ctx, x, y, CELL, btn);
+    buttonHitRects.push({ domId: btn.domId, x, y, w: CELL, h: CELL });
   });
 
   controlPanel.markDirty();
@@ -122,4 +145,10 @@ export function initVrControlPanel() {
 // active, so it's kept invisible otherwise rather than removed/recreated.
 export function updateVrControlPanel() {
   controlPanel.mesh.visible = AppState.xrSession;
+  if (!AppState.xrSession) return;
+  // camera.position is local to the rig (see core/sceneSetup.js), and once a
+  // session starts it's driven by the real headset pose — so this is the
+  // actual current eye height, not a guess, updated every frame in case the
+  // player crouches/stands or a different headset connects mid-session.
+  controlPanel.mesh.position.y = AppState.camera.position.y + HEIGHT_ABOVE_EYES;
 }

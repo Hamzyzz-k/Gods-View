@@ -1,5 +1,6 @@
 import { AppState } from "../core/state.js";
 import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
+import { controlPanel } from "./vrControlPanel.js";
 
 // ---------- VR voice feedback ----------
 // There's no chat log in VR to show a transcript in, so without this a
@@ -7,11 +8,15 @@ import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
 // heard before the spoken reply arrives — this exists purely to close that
 // gap: a small rig-parented strip, just below the control panel, showing
 // "listening" while recording and the transcript briefly after.
-const LOCAL_POSITION = [0, 1.15, -2.0]; // control panel sits at y=1.6; this sits just under it
+//
+// Sized to match the control panel (1.1 wide) rather than the original 2.0 —
+// same reasoning as that panel's own resize: anything this size directly in
+// front of the player crowds out the view it's supposed to be a small
+// addition to.
+const GAP_BELOW_CONTROL_PANEL = 0.42;
 
-export const voiceIndicator = new VRPanel({ worldWidth: 2.0, worldHeight: 0.4, canvasWidth: 1024 });
+export const voiceIndicator = new VRPanel({ worldWidth: 1.1, worldHeight: 0.24, canvasWidth: 1024 });
 voiceIndicator.mesh.name = "vrVoiceIndicator";
-voiceIndicator.mesh.position.set(...LOCAL_POSITION);
 
 let hideTimer = null;
 const SHOW_TRANSCRIPT_MS = 3000;
@@ -36,14 +41,25 @@ function draw(text, accent) {
   voiceIndicator.markDirty();
 }
 
+// Reads the control panel's CURRENT position rather than a fixed offset:
+// that panel tracks the real headset's eye height every frame (see
+// vrControlPanel.js), which is unknown until a real session reports it, so
+// "just under the control panel" has to be computed live too, not assumed.
+function syncPositionBelowControlPanel() {
+  voiceIndicator.mesh.position.copy(controlPanel.mesh.position);
+  voiceIndicator.mesh.position.y -= GAP_BELOW_CONTROL_PANEL;
+}
+
 export function showListening() {
   clearTimeout(hideTimer);
+  syncPositionBelowControlPanel();
   draw("🎤 Listening…", "#ff6b6b");
   voiceIndicator.mesh.visible = true;
 }
 
 export function showHeard(text) {
   clearTimeout(hideTimer);
+  syncPositionBelowControlPanel();
   draw(`"${text}"`, COLORS.blue);
   voiceIndicator.mesh.visible = true;
   hideTimer = setTimeout(() => {
