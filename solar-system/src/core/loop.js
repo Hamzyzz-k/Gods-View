@@ -107,16 +107,27 @@ export function animate() {
     // controllers' post-movement transforms, not their pre-movement ones.
     rig.updateMatrixWorld(true);
     updateControllerRaycast();
-    updateVrControlPanel();
   }
+
+  // Both panel updates run every frame, not just while AppState.xrSession is
+  // true — each checks that flag internally and hides itself when it's
+  // false, the same pattern updateFocus() below already uses. Gating the
+  // CALL itself behind xrSession (as an earlier version did) meant that once
+  // a session ended, these functions never ran again at all, so their own
+  // "hide when not in session" logic never got a chance to execute: the
+  // panels stayed visible with mesh.visible stuck at whatever it was the
+  // instant the session ended. sessionManager resets the rig to world
+  // origin on exit, and both panels are rig/scene-anchored near it, so this
+  // was not just an inert flag — a leftover-visible control panel would
+  // actually render floating in the middle of the desktop 3D scene, near
+  // the Sun, until the player entered VR again.
+  updateVrControlPanel();
 
   // Camera focus. Desktop keeps following the target; in an XR session this
   // instead steps the one-shot rig fly-to. See interaction/focus.js.
   updateFocus();
-  if (AppState.xrSession) {
-    rig.updateMatrixWorld(true); // focus may have moved the rig again just above
-    updateVrInfoPanel();
-  }
+  if (AppState.xrSession) rig.updateMatrixWorld(true); // focus may have moved the rig again just above
+  updateVrInfoPanel();
 
   // OrbitControls is meaningless during an XR session — the headset owns the
   // camera — and sessionManager disables it on session start, but this guard
