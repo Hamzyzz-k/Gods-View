@@ -75,20 +75,39 @@ export function interpretCommand(raw) {
     }
   }
 
-  // Focus / zoom on a specific body
-  const focusMatch = text.match(
-    /(?:focus on|zoom (?:in )?on|take me to|look at|go to)\s+(?:the\s+)?(international space station|space station|\w+)/
-  );
-  if (focusMatch) {
-    const word = focusMatch[1];
-    const target = word.includes("station") ? "iss" : word;
-    const mesh = target === "sun" ? sun : target === "iss" ? issProxyMesh : planets.find((p) => p.data.name.toLowerCase() === target)?.mesh;
-    if (mesh) {
-      if (sceneRegistry[target] && !sceneRegistry[target].isVisible()) sceneRegistry[target].setVisible(true); // reveal if hidden
-      focusOnObject(mesh);
-      return `Focusing on ${mesh.name}.`;
+  // Focus / zoom on a specific body. "show me X" is included here, not in the
+  // generic show/hide handling below: the personal framing ("me") signals
+  // "take me there" (a camera move), whereas bare "show X" — especially
+  // "show only X" or "show X and Y" — is a visibility toggle with no camera
+  // intent. Without this, "show me Saturn" fell through to the visibility
+  // branch, silently toggled Saturn's (already-true) visibility, and never
+  // moved the camera at all — the reply just said "Showing: saturn" instead
+  // of actually flying there, which is not what "show ME" means.
+  //
+  // The trigger phrase is only tested for presence, not used to capture the
+  // target positionally — an earlier version captured "the very next word",
+  // which broke on anything with words in between, like "show me a planet
+  // like Jupiter" (captured "a"). extractTargets() already knows how to find
+  // a real target anywhere in the sentence, so it's reused here instead.
+  const hasFocusIntent = /\b(?:focus on|zoom (?:in )?on|take me to|look at|go to|show me)\b/.test(text);
+  if (hasFocusIntent) {
+    // Only single, focusable bodies make sense here — group/aggregate matches
+    // (rings, belt, constellations, "moons" as a group) have no one mesh to
+    // fly to, so they're excluded rather than silently focusing on whichever
+    // happened to match first.
+    const focusable = extractTargets(text).filter(
+      (t) => PLANET_NAMES.includes(t) || t === "sun" || t === "iss"
+    );
+    if (focusable.length > 0) {
+      const target = focusable[0];
+      const mesh = target === "sun" ? sun : target === "iss" ? issProxyMesh : planets.find((p) => p.data.name.toLowerCase() === target)?.mesh;
+      if (mesh) {
+        if (sceneRegistry[target] && !sceneRegistry[target].isVisible()) sceneRegistry[target].setVisible(true); // reveal if hidden
+        focusOnObject(mesh);
+        return `Focusing on ${mesh.name}.`;
+      }
     }
-    return `I don't recognize "${target}" as something I can focus on.`;
+    return "I'm not sure which body you mean — try naming one, like \"show me Saturn\" or \"focus on the Sun\".";
   }
 
   const isHide = /\b(hide|remove|turn off|disable|don't show|get rid of)\b/.test(text);

@@ -44,6 +44,21 @@ Phrase shortcuts you must expand yourself:
   "outer planets" -> jupiter, saturn, uranus, neptune, pluto
   "everything"/"all planets" -> all nine planets
 
+"show"/"hide"/"showOnly" only change what's VISIBLE — they never move the
+camera. "focus" is the ONLY action that moves the camera to a body. These are
+easy to conflate because they share the word "show", so route by the user's
+actual intent, not just keyword matching:
+  - Personal/deictic phrasing ("show ME saturn", "take me to saturn", "let's
+    see saturn", "zoom in on saturn", "look at saturn", "go to saturn") means
+    the user wants the CAMERA there -> emit {"type":"focus","target":"saturn"}.
+  - Impersonal phrasing with no travel intent ("show saturn", "show only the
+    inner planets", "hide the asteroid belt") means a pure visibility change
+    -> emit {"type":"show"/"hide"/"showOnly",...}, no focus action.
+If your reply text says anything like "focusing on X" or "here's X" or "let's
+look at X", you MUST include the matching {"type":"focus","target":"X"}
+action — never describe a camera move in the reply without actually emitting
+the action that performs it.
+
 If the user asks a question rather than issuing a command, return
 "actions": [] and put a concise 2-4 sentence answer in "reply". When
 context.focusedFacts is present and relevant, ground the answer in those real
