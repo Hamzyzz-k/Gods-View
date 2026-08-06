@@ -10,6 +10,7 @@ import { updateLocomotion } from "../xr/locomotion.js";
 import { updateControllerRaycast } from "../xr/controllerRaycast.js";
 import { updateVrControlPanel } from "../xr/vrControlPanel.js";
 import { updateVrInfoPanel } from "../xr/vrInfoPanel.js";
+import { updateVrTourPanel } from "../xr/vrTourPanel.js";
 import { updateWalkControls } from "../surface/walkControls.js";
 import { updateSurfaceLocomotion } from "../xr/surfaceLocomotion.js";
 import { updateSkyObjects } from "../surface/skyObjects.js";
@@ -145,6 +146,7 @@ export function animate() {
   updateFocus();
   if (AppState.xrSession) rig.updateMatrixWorld(true); // focus may have moved the rig again just above
   updateVrInfoPanel();
+  updateVrTourPanel();
 
   // Surface Mode. Sky objects (moon orbits) animate regardless of which
   // locomotion scheme is driving the player; walking itself branches on the

@@ -83,6 +83,8 @@ const { initVrControlPanel } = await import("./xr/vrControlPanel.js");
 initVrControlPanel();
 const { initVrInfoPanel } = await import("./xr/vrInfoPanel.js");
 initVrInfoPanel();
+const { initVrTourPanel } = await import("./xr/vrTourPanel.js");
+initVrTourPanel();
 const { initControllerRaycast } = await import("./xr/controllerRaycast.js");
 initControllerRaycast();
 
