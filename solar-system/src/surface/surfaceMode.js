@@ -12,17 +12,21 @@ export const EYE_HEIGHT = 1.7; // the height AppState.rig.position.y settles at 
 // as a bug (the camera would slew toward wherever it last pointed).
 let savedOrbitalView = null;
 
-// Wired by surface/walkControls.js (desktop) and xr/surfaceLocomotion.js (VR,
-// added when VR surface support lands) via setLocomotionHooks() rather than
-// this module importing either directly — both would otherwise need to
-// import surfaceMode.js AND be imported back by it, and one side of that
-// cycle would see undefined exports depending on load order (the same class
-// of bug caught in surface/skyObjects.js during Phase B).
-let onEnterHook = null;
-let onExitHook = null;
-export function setLocomotionHooks({ onEnter, onExit }) {
-  onEnterHook = onEnter;
-  onExitHook = onExit;
+// Wired by surface/desktopSurfaceUI.js and xr/vrSurfaceUI.js via
+// addLocomotionHooks() rather than this module importing either directly —
+// both would otherwise need to import surfaceMode.js AND be imported back by
+// it, and one side of that cycle would see undefined exports depending on
+// load order (the same class of bug caught in surface/skyObjects.js during
+// Phase B). A list, not a single slot: desktop and VR both need to react to
+// the same enter/exit, each doing something different (pointer-lock vs
+// gamepad-driven walking, different UI), the same "every listener hears
+// every state change, decides for itself whether it applies" pattern
+// voice/speechRecognition.js already uses for the same kind of problem.
+const enterHooks = [];
+const exitHooks = [];
+export function addLocomotionHooks({ onEnter, onExit }) {
+  if (onEnter) enterHooks.push(onEnter);
+  if (onExit) exitHooks.push(onExit);
 }
 
 export function enterSurface(planetName) {
@@ -49,7 +53,7 @@ export function enterSurface(planetName) {
   AppState.surfacePlanet = planetName;
   AppState.activeScene = surfaceScene;
 
-  onEnterHook?.(cfg);
+  enterHooks.forEach((hook) => hook(cfg));
   return true;
 }
 
@@ -57,7 +61,7 @@ export function exitSurface() {
   if (AppState.mode !== "surface") return false;
   const { camera, controls, rig, scene } = AppState;
 
-  onExitHook?.();
+  exitHooks.forEach((hook) => hook());
 
   scene.add(rig); // back into the orbital scene
   rig.position.set(0, 0, 0);

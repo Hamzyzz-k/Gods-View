@@ -2,6 +2,8 @@ import * as THREE from "three";
 import { AppState } from "../core/state.js";
 import { infoPanel, infoName, infoMeta, infoDesc, infoCredit } from "../ui/infoPanel.js";
 import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
+import { getSurfaceData } from "../surface/surfaceData.js";
+import { registerPanel } from "./controllerRaycast.js";
 
 // ---------- VR in-world info panel ----------
 // Shows the same content as the desktop #infoPanel — name, description, and
@@ -20,6 +22,14 @@ export const infoVrPanel = new VRPanel({ worldWidth: 2.0, worldHeight: 1.3, canv
 infoVrPanel.mesh.name = "vrInfoPanel";
 
 const PADDING = 40;
+
+// Consumed by xr/controllerRaycast.js's panel registry. VR has no double-
+// click gesture (the desktop landing trigger — interaction/raycastPicking.js),
+// so this button IS how landing happens in VR: laser-select it and it fires
+// the exact same click handler the desktop #landBtn does (see
+// surface/desktopSurfaceUI.js), reused rather than duplicated by mapping
+// this hit-rect to that same DOM id.
+export const infoPanelHitRects = [];
 
 function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
   const words = text.split(" ");
@@ -93,6 +103,30 @@ function redraw() {
   const lines = wrapText(ctx, infoDesc.textContent || "", PADDING, y, W - PADDING * 2, 34);
   y += lines * 34 + 20;
 
+  // Land button — only for the 9 planets in surface/surfaceData.js. Placed
+  // at a fixed distance from the bottom edge (not stacked under the
+  // variable-height description above) so its position is predictable
+  // regardless of how much text just wrapped above it.
+  infoPanelHitRects.length = 0;
+  if (getSurfaceData(infoName.textContent)) {
+    const btnH = 64;
+    const btnY = H - 108;
+    roundRect(ctx, PADDING, btnY, W - PADDING * 2, btnH, btnH / 2);
+    ctx.fillStyle = COLORS.pillBgActive;
+    ctx.fill();
+    ctx.strokeStyle = COLORS.blue;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    ctx.font = "bold 28px sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillStyle = COLORS.blue;
+    ctx.fillText("🚶 Land on Surface", W / 2, btnY + btnH / 2 + 2);
+    ctx.textAlign = "left";
+    ctx.textBaseline = "alphabetic";
+    infoPanelHitRects.push({ domId: "landBtn", x: PADDING, y: btnY, w: W - PADDING * 2, h: btnH });
+  }
+
   if (infoCredit.textContent) {
     ctx.font = "italic 20px sans-serif";
     ctx.fillStyle = COLORS.textDim;
@@ -107,6 +141,15 @@ export function initVrInfoPanel() {
   redraw();
   const observer = new MutationObserver(redraw);
   observer.observe(infoPanel, { childList: true, subtree: true, characterData: true });
+
+  // The mesh sits in raycastTargets regardless of visibility, but
+  // THREE.Raycaster already skips invisible objects during traversal, so
+  // this needs no extra "only while shown" guard of its own.
+  registerPanel({
+    mesh: infoVrPanel.mesh,
+    getHitRects: () => infoPanelHitRects,
+    uvToCanvasPx: (uv) => infoVrPanel.uvToCanvasPx(uv),
+  });
 }
 
 // Scratch objects, reused every frame.

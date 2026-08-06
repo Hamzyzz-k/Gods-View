@@ -1,5 +1,5 @@
 import { AppState } from "../core/state.js";
-import { enterSurface, exitSurface, setLocomotionHooks } from "./surfaceMode.js";
+import { enterSurface, exitSurface, addLocomotionHooks } from "./surfaceMode.js";
 import { getSurfaceData } from "./surfaceData.js";
 import {
   initWalkControls, activateWalkControls, deactivateWalkControls, requestPointerLock,
@@ -15,10 +15,14 @@ export function initDesktopSurfaceUI() {
 
   // Wires surfaceMode.js's generic enter/exit to this specific input scheme,
   // without surfaceMode.js needing to import walkControls.js directly — see
-  // the comment on setLocomotionHooks() for why (avoids an import cycle the
-  // same way surface/skyObjects.js's fix did in Phase B).
-  setLocomotionHooks({
+  // the comment on addLocomotionHooks() for why (avoids an import cycle the
+  // same way surface/skyObjects.js's fix did in Phase B). Guarded to non-VR:
+  // xr/surfaceLocomotion.js registers the VR counterpart of this same hook,
+  // and pointer-lock / keyboard WASD have no meaning while a headset owns
+  // the camera, so this half must stay out of the way during a session.
+  addLocomotionHooks({
     onEnter: (cfg) => {
+      if (AppState.xrSession) return;
       activateWalkControls(cfg);
       // Landing is only ever triggered from within a real user gesture right
       // now (double-click), so this lock() call is still inside that
@@ -31,12 +35,19 @@ export function initDesktopSurfaceUI() {
       hint.classList.remove("hidden");
     },
     onExit: () => {
+      if (AppState.xrSession) return;
       deactivateWalkControls();
       exitBtn.classList.add("hidden");
       hint.classList.add("hidden");
     },
   });
 
+  // Not desktop-exclusive: the VR control panel's Surface-Mode "Exit" icon
+  // and the VR info panel's "Land on Surface" button both drive these SAME
+  // DOM elements via .click() (see xr/vrControlPanel.js and
+  // xr/vrInfoPanel.js's panel registrations) — one shared listener handles
+  // both input paths, since AppState.focusedTarget is set identically by
+  // desktop click-to-focus and VR laser-select-to-focus.
   exitBtn.addEventListener("click", exitSurface);
   hint.addEventListener("click", requestPointerLock);
 

@@ -63,6 +63,14 @@ await initXR();
 const { initLocomotion } = await import("./xr/locomotion.js");
 initLocomotion();
 
+// Surface Mode (VR): the gravity-based-walking counterpart to
+// initDesktopSurfaceUI() above, and to initLocomotion() just above (which is
+// the orbital free-flight scheme, not this one). Also safe unconditionally —
+// see surface/surfaceMode.js's enter/exit hooks for how exactly one of the
+// two locomotion schemes ends up active depending on xrSession.
+const { initSurfaceLocomotion } = await import("./xr/surfaceLocomotion.js");
+initSurfaceLocomotion();
+
 // In-world panels + laser picking. Also safe with no VR support: everything
 // they create just sits invisible (mesh.visible = false) until a session
 // exists to show it in.

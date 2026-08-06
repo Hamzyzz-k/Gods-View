@@ -11,6 +11,7 @@ import { updateControllerRaycast } from "../xr/controllerRaycast.js";
 import { updateVrControlPanel } from "../xr/vrControlPanel.js";
 import { updateVrInfoPanel } from "../xr/vrInfoPanel.js";
 import { updateWalkControls } from "../surface/walkControls.js";
+import { updateSurfaceLocomotion } from "../xr/surfaceLocomotion.js";
 import { updateSkyObjects } from "../surface/skyObjects.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
@@ -102,11 +103,23 @@ export function animate() {
     // simulation's speedMultiplier-scaled dt above — movement speed is a
     // property of the player, not of how fast the planets are orbiting, and
     // this must keep working even while the simulation is paused.
-    updateLocomotion(delta);
+    //
+    // Orbital only: this is the free-flight scheme, routed through
+    // xr/collision.js against the ORBITAL scene's planet colliders. Running
+    // it in Surface Mode would both double up with updateSurfaceLocomotion
+    // below and test collision against bodies that aren't even in the scene
+    // currently on screen once the rig has been reparented into a surface
+    // scene — harmless-looking (it just wouldn't trigger in practice, given
+    // the coordinate ranges involved) rather than actually correct, and not
+    // a coincidence worth depending on.
+    if (AppState.mode === "orbital") updateLocomotion(delta);
 
     // Rig may have just moved/turned (locomotion) or eased toward a focus
     // target (below) — re-propagate so this frame's raycast uses the
     // controllers' post-movement transforms, not their pre-movement ones.
+    // Runs in both modes: the VR control panel's Exit-Surface button and the
+    // info panel's Land button both need to stay laser-selectable regardless
+    // of which scene is active.
     rig.updateMatrixWorld(true);
     updateControllerRaycast();
   }
@@ -132,12 +145,18 @@ export function animate() {
   updateVrInfoPanel();
 
   // Surface Mode. Sky objects (moon orbits) animate regardless of which
-  // locomotion scheme is driving the player; the walking itself is desktop-
-  // only for now — Phase D adds the VR-thumbstick-driven counterpart as a
-  // parallel branch here, the same way updateLocomotion above is XR-only.
+  // locomotion scheme is driving the player; walking itself branches on the
+  // same xrSession flag every other input path in this file already does —
+  // gravity-based gamepad walking (xr/surfaceLocomotion.js) in VR, pointer-
+  // lock WASD (surface/walkControls.js) otherwise. Only one is ever
+  // "active" at a time (surface/surfaceMode.js's enter hooks arm exactly the
+  // matching one), so calling the other would just be an early-return no-op
+  // — but this still only calls the one that applies, to keep both files'
+  // own `if (!active) return;` guard meaningful rather than load-bearing.
   if (AppState.mode === "surface") {
     updateSkyObjects(AppState.activeScene, delta);
-    if (!AppState.xrSession) updateWalkControls(delta);
+    if (AppState.xrSession) updateSurfaceLocomotion(delta);
+    else updateWalkControls(delta);
   }
 
   // OrbitControls is meaningless during an XR session — the headset owns the

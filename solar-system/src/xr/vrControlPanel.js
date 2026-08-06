@@ -1,6 +1,7 @@
 import { AppState } from "../core/state.js";
 import { sceneRegistry } from "../assistant/sceneRegistry.js";
 import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
+import { registerPanel } from "./controllerRaycast.js";
 
 // ---------- VR control panel ----------
 // The desktop pause/orbit-lines/moons/constellations/mute controls, mirrored
@@ -38,15 +39,34 @@ const HEIGHT_ABOVE_EYES = 0.55; // look-up angle at FORWARD_Z: atan(0.55/2.6) �
 // math for a shape it was never designed for, buttons are square icons now:
 // simpler, always fits, and state is still visible via the highlight color
 // plus the icon itself (e.g. pause swaps to a play glyph).
-const BUTTONS = [
+const VOICE_BTN = { domId: "ttsToggleBtn", icon: () => document.getElementById("ttsToggleBtn")?.textContent || "🔊", active: () => !document.getElementById("ttsToggleBtn")?.classList.contains("muted") };
+const AMBIENCE_BTN = { domId: "ambientToggleBtn", icon: () => document.getElementById("ambientToggleBtn")?.textContent || "🪐", active: () => !document.getElementById("ambientToggleBtn")?.classList.contains("muted") };
+
+const BUTTONS_ORBITAL = [
   { domId: "pauseBtn", icon: () => (document.getElementById("pauseBtn")?.textContent === "Resume" ? "▶" : "⏸") },
   { domId: "orbitBtn", icon: "🛰", active: () => AppState.orbitLinesVisible },
   { domId: "moonsBtn", icon: "🌙", active: () => isBtnActive("moonsBtn") },
   { domId: "constellationBtn", icon: "✨", active: () => isBtnActive("constellationBtn") },
   { domId: "issBtn", icon: "📡" },
-  { domId: "ttsToggleBtn", icon: () => document.getElementById("ttsToggleBtn")?.textContent || "🔊", active: () => !document.getElementById("ttsToggleBtn")?.classList.contains("muted") },
-  { domId: "ambientToggleBtn", icon: () => document.getElementById("ambientToggleBtn")?.textContent || "🪐", active: () => !document.getElementById("ambientToggleBtn")?.classList.contains("muted") },
+  VOICE_BTN,
+  AMBIENCE_BTN,
 ];
+
+// Surface Mode: none of the orbital-simulation buttons above mean anything
+// while standing on a planet (there are no orbit lines, moons-as-a-group, or
+// ISS to locate down there) — replaced with the one action that does,
+// "leave", which drives the same #exitSurfaceBtn desktop's own Exit button
+// uses (surface/desktopSurfaceUI.js). Mute toggles carry over since you'd
+// still want them available while walking around.
+const BUTTONS_SURFACE = [
+  { domId: "exitSurfaceBtn", icon: "🚪" },
+  VOICE_BTN,
+  AMBIENCE_BTN,
+];
+
+function currentButtons() {
+  return AppState.mode === "surface" ? BUTTONS_SURFACE : BUTTONS_ORBITAL;
+}
 
 // The desktop toggle buttons don't carry an explicit "on/off" CSS class today
 // (moonsBtn/constellationBtn just fire and let their exported *Visible flag
@@ -70,7 +90,12 @@ const CELL = 130; // square button, canvas px
 // rather than the ~66°-wide bar the original 2.6-unit version worked out to
 // — that was most of the headset's horizontal FOV, which is what "spoils
 // the view" turned out to mean.
-const CANVAS_W = PADDING * 2 + CELL * BUTTONS.length + GAP * (BUTTONS.length - 1);
+//
+// Sized for the LARGER of the two button sets (orbital's 7) so the panel's
+// physical size — and therefore its position/angular size in view — never
+// changes when switching modes; Surface Mode's smaller set is centered
+// within that same fixed width instead (see redrawControlPanel()).
+const CANVAS_W = PADDING * 2 + CELL * BUTTONS_ORBITAL.length + GAP * (BUTTONS_ORBITAL.length - 1);
 const CANVAS_H = PADDING * 2 + CELL;
 export const controlPanel = new VRPanel({
   worldWidth: 1.1,
@@ -113,9 +138,16 @@ export function redrawControlPanel() {
   ctx.lineWidth = 3;
   ctx.stroke();
 
+  const buttons = currentButtons();
+  // Centered within the fixed canvas width rather than always starting at
+  // PADDING, so Surface Mode's shorter row doesn't sit flush left with empty
+  // space stranded on the right.
+  const rowWidth = buttons.length * CELL + (buttons.length - 1) * GAP;
+  const startX = (W - rowWidth) / 2;
+
   buttonHitRects.length = 0;
-  BUTTONS.forEach((btn, i) => {
-    const x = PADDING + i * (CELL + GAP);
+  buttons.forEach((btn, i) => {
+    const x = startX + i * (CELL + GAP);
     const y = PADDING;
     drawButton(ctx, x, y, CELL, btn);
     buttonHitRects.push({ domId: btn.domId, x, y, w: CELL, h: CELL });
@@ -139,13 +171,31 @@ export function initVrControlPanel() {
   const watchTargets = [document.getElementById("ui"), document.getElementById("ttsToggleBtn"), document.getElementById("ambientToggleBtn")].filter(Boolean);
   const observer = new MutationObserver(redrawControlPanel);
   watchTargets.forEach((el) => observer.observe(el, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["class"] }));
+
+  registerPanel({
+    mesh: controlPanel.mesh,
+    getHitRects: () => buttonHitRects,
+    uvToCanvasPx: (uv) => controlPanel.uvToCanvasPx(uv),
+    afterClick: redrawControlPanel,
+  });
 }
+
+let lastPanelMode = null;
 
 // Called once per frame; the panel only needs to exist while a session is
 // active, so it's kept invisible otherwise rather than removed/recreated.
 export function updateVrControlPanel() {
   controlPanel.mesh.visible = AppState.xrSession;
   if (!AppState.xrSession) return;
+
+  // Redraw exactly once when entering/leaving Surface Mode, not every frame
+  // — orbitBtn/moonsBtn-style clicks already get their own redraw via
+  // afterClick above, this only needs to catch the mode itself changing.
+  if (AppState.mode !== lastPanelMode) {
+    lastPanelMode = AppState.mode;
+    redrawControlPanel();
+  }
+
   // camera.position is local to the rig (see core/sceneSetup.js), and once a
   // session starts it's driven by the real headset pose — so this is the
   // actual current eye height, not a guess, updated every frame in case the
