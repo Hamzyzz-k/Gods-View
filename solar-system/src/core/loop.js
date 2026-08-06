@@ -133,7 +133,16 @@ export function animate() {
   // camera — and sessionManager disables it on session start, but this guard
   // means the loop is correct on its own terms regardless.
   if (!AppState.xrSession) controls.update();
-  renderer.render(scene, camera);
+
+  // Renders AppState.activeScene, not the module-eval-time-captured `scene`
+  // above — everything ELSE in this function (orbits, alignment tweens,
+  // eclipse lighting, focus, VR panels) still reads/writes the orbital
+  // `scene`'s objects unconditionally, so the orbital sim keeps quietly
+  // ticking even while a different scene is on screen (Surface Mode). That
+  // is deliberate: it costs one render call nobody sees, and in exchange
+  // returning from a planet's surface needs no resync logic at all — the
+  // orbit you left is exactly the orbit you come back to.
+  renderer.render(AppState.activeScene, camera);
 }
 
 // Starts the loop, and hands frame scheduling to the XR device automatically

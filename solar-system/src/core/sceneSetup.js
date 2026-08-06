@@ -61,5 +61,10 @@ export function initScene() {
   AppState.sunLight = sunLight;
   AppState.ambient = ambient;
 
+  // What actually gets rendered each frame — see core/loop.js. Starts as the
+  // orbital scene; surface/surfaceMode.js repoints this (and reparents the
+  // rig) when the player lands on/leaves a planet.
+  AppState.activeScene = scene;
+
   return AppState;
 }

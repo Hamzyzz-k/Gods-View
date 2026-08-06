@@ -38,4 +38,25 @@ export const AppState = {
   // XR-only system (locomotion, collision, in-world panels) so the desktop
   // path is completely untouched by them.
   xrSession: false,
+
+  // ---------- Surface Mode ----------
+  // 'orbital' | 'surface'. The orbital scene keeps existing and keeps
+  // simulating in the background even while mode is 'surface' — see
+  // core/loop.js, which renders `activeScene` rather than the module-eval-
+  // time-captured `scene`. That is what makes returning to orbit seamless
+  // (nothing to resync) at the cost of a render call that never shows up.
+  mode: "orbital",
+  // The THREE.Scene actually passed to renderer.render() each frame. Starts
+  // equal to `scene`; core/sceneSetup.js sets this once at init.
+  activeScene: null,
+  // Planet name (lowercase) currently landed on, or null in orbital mode.
+  surfacePlanet: null,
+
+  // ---------- Guided Tour ----------
+  // 'idle' | 'playing' | 'paused'. Entering Surface Mode always ends an
+  // active tour (see surface/surfaceMode.js) rather than pausing it, per
+  // an explicit product decision — a landed planet is a destination, not a
+  // detour from the tour.
+  tourState: "idle",
+  tourIndex: -1,
 };
