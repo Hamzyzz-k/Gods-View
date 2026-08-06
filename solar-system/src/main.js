@@ -37,6 +37,11 @@ await import("./ui/eclipseCalendar.js");
 const { initDesktopSurfaceUI } = await import("./surface/desktopSurfaceUI.js");
 initDesktopSurfaceUI();
 
+// Guided Tour (desktop): Start Tour button + tour bar wiring. Also safe
+// unconditionally — inert until Start Tour is clicked.
+const { initTourControls } = await import("./ui/tourControls.js");
+initTourControls();
+
 // Data feeds
 await import("./data/spaceNews.js");
 

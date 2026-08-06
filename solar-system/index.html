@@ -36,10 +36,22 @@
     <div class="row">
       <button id="alignBtn"> Align Planets</button>
     </div>
+    <div class="row">
+      <button id="startTourBtn">🚀 Start Tour</button>
+    </div>
     <div id="info">Drag to rotate • Scroll to zoom • Click a planet (or the ISS orbiting Earth!) to zoom in &amp; see info • Double-click a planet to land on its surface</div>
   </div>
 
   <div id="tooltip"></div>
+
+  <!-- Shown only while a guided tour is active (see ui/tourControls.js). -->
+  <div id="tourBar" class="hidden">
+    <button id="tourPrevBtn" title="Previous planet">⏮</button>
+    <button id="tourPlayPauseBtn" title="Pause tour">⏸</button>
+    <button id="tourNextBtn" title="Next planet">⏭</button>
+    <span id="tourStopLabel"></span>
+    <button id="tourExitBtn" title="Exit tour">Exit Tour</button>
+  </div>
 
   <button id="ttsToggleBtn" title="Mute narration">🔊</button>
   <button id="ambientToggleBtn" title="Mute planet ambience">🪐</button>

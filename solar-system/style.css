@@ -372,6 +372,57 @@ canvas {
   pointer-events: none;
 }
 
+#tourBar {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(10, 12, 24, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 8px 10px 8px 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+}
+
+#tourBar button {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e8ecf7;
+  border-radius: 16px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+#tourBar button:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+#tourPrevBtn, #tourPlayPauseBtn, #tourNextBtn {
+  padding: 6px 10px;
+  font-size: 15px;
+}
+
+#tourExitBtn {
+  background: linear-gradient(90deg, #7ab8ff, #ffd27a) !important;
+  color: #0b0d18 !important;
+  font-weight: 600;
+  border: none !important;
+}
+
+#tourStopLabel {
+  font-size: 12px;
+  opacity: 0.75;
+  padding: 0 4px;
+  min-width: 70px;
+  text-align: center;
+}
+
 #agentPanel {
   position: fixed;
   bottom: 16px;

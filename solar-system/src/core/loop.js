@@ -13,6 +13,8 @@ import { updateVrInfoPanel } from "../xr/vrInfoPanel.js";
 import { updateWalkControls } from "../surface/walkControls.js";
 import { updateSurfaceLocomotion } from "../xr/surfaceLocomotion.js";
 import { updateSkyObjects } from "../surface/skyObjects.js";
+import { updateTour } from "../tour/tourMode.js";
+import { updateTourUI } from "../ui/tourControls.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
@@ -158,6 +160,12 @@ export function animate() {
     if (AppState.xrSession) updateSurfaceLocomotion(delta);
     else updateWalkControls(delta);
   }
+
+  // Guided Tour. updateTour drives dwell/auto-advance (no-op when idle);
+  // updateTourUI syncs the desktop tour bar to AppState every frame, same
+  // pattern as updateVrControlPanel/updateVrInfoPanel above.
+  updateTour(delta);
+  updateTourUI();
 
   // OrbitControls is meaningless during an XR session — the headset owns the
   // camera — and sessionManager disables it on session start, but this guard
