@@ -308,6 +308,70 @@ canvas {
   background: rgba(255,255,255,0.18);
 }
 
+/* Land on Surface — same pill shape as #infoReset, but in the app's gold/blue
+   gradient (matching #agentForm's Send button) so it reads as the primary,
+   more consequential action in the panel rather than a secondary one. */
+#landBtn {
+  width: 100%;
+  background: linear-gradient(90deg, #7ab8ff, #ffd27a);
+  border: none;
+  color: #0b0d18;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+#landBtn:hover {
+  filter: brightness(1.08);
+}
+
+.hidden {
+  display: none !important;
+}
+
+#exitSurfaceBtn {
+  position: fixed;
+  top: 44px;
+  left: 16px;
+  z-index: 30;
+  background: rgba(10, 12, 24, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e8ecf7;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+
+#exitSurfaceBtn:hover {
+  background: rgba(255,255,255,0.18);
+  transform: scale(1.03);
+}
+
+#surfaceHint {
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(10, 12, 24, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #e8ecf7;
+  font-size: 12px;
+  opacity: 0.85;
+  padding: 7px 14px;
+  border-radius: 20px;
+  pointer-events: none;
+}
+
 #agentPanel {
   position: fixed;
   bottom: 16px;

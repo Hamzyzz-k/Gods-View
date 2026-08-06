@@ -31,6 +31,12 @@ await import("./interaction/raycastPicking.js");
 await import("./ui/desktopControls.js");
 await import("./ui/eclipseCalendar.js");
 
+// Surface Mode (desktop): wires walking controls to surfaceMode.js's
+// enter/exit, and the Land/Exit buttons. Safe to init unconditionally —
+// nothing here does anything until a planet is actually double-clicked.
+const { initDesktopSurfaceUI } = await import("./surface/desktopSurfaceUI.js");
+initDesktopSurfaceUI();
+
 // Data feeds
 await import("./data/spaceNews.js");
 

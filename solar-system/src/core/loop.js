@@ -10,6 +10,8 @@ import { updateLocomotion } from "../xr/locomotion.js";
 import { updateControllerRaycast } from "../xr/controllerRaycast.js";
 import { updateVrControlPanel } from "../xr/vrControlPanel.js";
 import { updateVrInfoPanel } from "../xr/vrInfoPanel.js";
+import { updateWalkControls } from "../surface/walkControls.js";
+import { updateSkyObjects } from "../surface/skyObjects.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
@@ -129,10 +131,21 @@ export function animate() {
   if (AppState.xrSession) rig.updateMatrixWorld(true); // focus may have moved the rig again just above
   updateVrInfoPanel();
 
+  // Surface Mode. Sky objects (moon orbits) animate regardless of which
+  // locomotion scheme is driving the player; the walking itself is desktop-
+  // only for now — Phase D adds the VR-thumbstick-driven counterpart as a
+  // parallel branch here, the same way updateLocomotion above is XR-only.
+  if (AppState.mode === "surface") {
+    updateSkyObjects(AppState.activeScene, delta);
+    if (!AppState.xrSession) updateWalkControls(delta);
+  }
+
   // OrbitControls is meaningless during an XR session — the headset owns the
   // camera — and sessionManager disables it on session start, but this guard
-  // means the loop is correct on its own terms regardless.
-  if (!AppState.xrSession) controls.update();
+  // means the loop is correct on its own terms regardless. It is equally
+  // meaningless in Surface Mode (surfaceMode.js already sets
+  // controls.enabled = false on entry), so this one flag correctly gates both.
+  if (!AppState.xrSession && controls.enabled) controls.update();
 
   // Renders AppState.activeScene, not the module-eval-time-captured `scene`
   // above — everything ELSE in this function (orbits, alignment tweens,
