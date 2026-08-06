@@ -2,6 +2,7 @@ import { AppState } from "../core/state.js";
 import { getSurfaceScene } from "./surfaceScene.js";
 import { getSurfaceData } from "./surfaceData.js";
 import { clearFocus } from "../interaction/focus.js";
+import { startWind, stopWind } from "./windAudio.js";
 
 export const EYE_HEIGHT = 1.7; // the height AppState.rig.position.y settles at when standing on a surface's ground plane (y=0)
 
@@ -53,6 +54,7 @@ export function enterSurface(planetName) {
   AppState.surfacePlanet = planetName;
   AppState.activeScene = surfaceScene;
 
+  startWind(cfg.windStyle, cfg.windSpeed);
   enterHooks.forEach((hook) => hook(cfg));
   return true;
 }
@@ -62,6 +64,7 @@ export function exitSurface() {
   const { camera, controls, rig, scene } = AppState;
 
   exitHooks.forEach((hook) => hook());
+  stopWind();
 
   scene.add(rig); // back into the orbital scene
   rig.position.set(0, 0, 0);

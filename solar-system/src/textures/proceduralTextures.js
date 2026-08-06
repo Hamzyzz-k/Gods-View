@@ -478,6 +478,46 @@ export function earthCloudsTexture(w, h) {
   return c;
 }
 
+// Converts a grayscale heightmap canvas (lighter = raised, as produced by
+// crateredHeightMap/bandedHeightMap above) into a tangent-space normal map,
+// via a simple central-difference gradient rather than a full Sobel kernel —
+// cheap and visually indistinguishable at these texture sizes. Used in place
+// of bumpMap for Surface Mode ground: bumpMap only fakes shading from the
+// heightmap's own luminance, which reads flat at a grazing sun angle (exactly
+// the angle a ground-level player sees most of the time); a real normal map
+// encodes actual surface direction, so it keeps shading correctly under low
+// light instead of just going gray.
+export function heightMapToNormalMap(heightCanvas, strength = 2.2) {
+  const w = heightCanvas.width;
+  const h = heightCanvas.height;
+  const src = heightCanvas.getContext("2d").getImageData(0, 0, w, h).data;
+  const out = makeCanvas(w, h);
+  const octx = out.getContext("2d");
+  const img = octx.createImageData(w, h);
+
+  const heightAt = (x, y) => {
+    const xi = ((x % w) + w) % w; // wrap horizontally — heightmaps here are equirectangular
+    const yi = Math.min(h - 1, Math.max(0, y)); // clamp vertically, no wrap at the poles
+    return src[(yi * w + xi) * 4] / 255;
+  };
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const dx = (heightAt(x - 1, y) - heightAt(x + 1, y)) * strength;
+      const dy = (heightAt(x, y - 1) - heightAt(x, y + 1)) * strength;
+      const dz = 1;
+      const len = Math.sqrt(dx * dx + dy * dy + dz * dz);
+      const idx = (y * w + x) * 4;
+      img.data[idx] = Math.round((dx / len * 0.5 + 0.5) * 255);
+      img.data[idx + 1] = Math.round((dy / len * 0.5 + 0.5) * 255);
+      img.data[idx + 2] = Math.round((dz / len * 0.5 + 0.5) * 255);
+      img.data[idx + 3] = 255;
+    }
+  }
+  octx.putImageData(img, 0, 0);
+  return out;
+}
+
 // Small grid texture standing in for solar-cell panels on the ISS model.
 export function issPanelTexture(w, h) {
   const c = makeCanvas(w, h);

@@ -1,6 +1,8 @@
 import * as THREE from "three";
 import { planetData } from "../scene/planetData.js";
 import { getSkyNeighbours, SURFACE_GROUND_SIZE } from "./surfaceData.js";
+import { getTexture, earthCloudsTexture, ringTexture } from "../textures/proceduralTextures.js";
+import { loadRealTexture, REAL_TEXTURE_URLS } from "../textures/realTextures.js";
 
 // ---------- stylized sky content ----------
 // Two different kinds of object, deliberately built differently because they
@@ -92,6 +94,70 @@ function buildOrbitingMoon(m, pivotGroup) {
   return { pivot: moonPivot, angularSpeed: Math.sign(m.speed || 1) * 0.15 };
 }
 
+const CLOUD_SHELL_R = SURFACE_GROUND_SIZE * 0.55; // inside the sky dome and the neighbour-planet distance, so clouds read as closer/lower than both
+const CLOUD_ROTATE_SPEED = 0.004; // slow drift, purely decorative — real wind-driven cloud motion is handled separately by surface/windParticles.js
+
+// Earth-only: a thin translucent cloud shell overhead, same visual idea as
+// planetFactory.js's orbital Earth clouds (same texture, same progressive
+// real-photo upgrade), just built as a sky layer instead of wrapped tight
+// around a tiny orbital sphere. BackSide because the player stands INSIDE
+// this sphere looking up, the same reasoning buildSkyDome() in
+// surfaceScene.js already uses for the sky itself.
+function buildEarthClouds() {
+  const geo = new THREE.SphereGeometry(CLOUD_SHELL_R, 32, 24);
+  const mat = new THREE.MeshBasicMaterial({
+    map: getTexture("SurfaceEarthClouds", () => earthCloudsTexture(1024, 512)),
+    transparent: true,
+    opacity: 0.5,
+    side: THREE.BackSide,
+    depthWrite: false,
+  });
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.name = "surfaceClouds";
+  loadRealTexture(REAL_TEXTURE_URLS.EarthClouds, (tex) => {
+    mat.map = tex;
+    mat.needsUpdate = true;
+  });
+  return mesh;
+}
+
+// Saturn-only: a huge ring arcing across the sky, standing in for how
+// dramatically Saturn's real rings would dominate the view from its own
+// cloud tops — not orbital-mechanics-accurate placement (this is a static
+// backdrop, not a real ring plane relative to the player's exact latitude),
+// same "plausible, not scientifically accurate" bar the rest of Surface Mode
+// already commits to. Tilted so it reads as crossing overhead rather than
+// lying flat like a halo.
+function buildSaturnRing() {
+  const innerR = SURFACE_GROUND_SIZE * 0.5;
+  const outerR = SURFACE_GROUND_SIZE * 1.35;
+  const geo = new THREE.RingGeometry(innerR, outerR, 96);
+  const pos = geo.attributes.position;
+  const v3 = new THREE.Vector3();
+  for (let i = 0; i < pos.count; i++) {
+    v3.fromBufferAttribute(pos, i);
+    const u = THREE.MathUtils.clamp((v3.length() - innerR) / (outerR - innerR), 0, 1);
+    geo.attributes.uv.setXY(i, u, 1);
+  }
+  const mat = new THREE.MeshBasicMaterial({
+    map: getTexture("SurfaceSaturnRing", () => ringTexture(1024, 16, 44, 25, 68)),
+    side: THREE.DoubleSide,
+    transparent: true,
+    opacity: 0.55,
+    depthWrite: false,
+  });
+  const ring = new THREE.Mesh(geo, mat);
+  ring.name = "surfaceRing";
+  ring.position.set(0, SURFACE_GROUND_SIZE * 0.4, -SURFACE_GROUND_SIZE * 0.2);
+  ring.rotation.x = THREE.MathUtils.degToRad(63); // tips the flat ring up into an overhead arc rather than a ground-level halo
+  ring.rotation.z = THREE.MathUtils.degToRad(12); // slight diagonal cant so it doesn't read as perfectly symmetrical/artificial
+  loadRealTexture(REAL_TEXTURE_URLS.SaturnRing, (tex) => {
+    mat.map = tex;
+    mat.needsUpdate = true;
+  });
+  return ring;
+}
+
 export function buildSkyObjects(planetName) {
   const group = new THREE.Group();
   group.name = "skyObjects";
@@ -125,6 +191,15 @@ export function buildSkyObjects(planetName) {
   // it needs lives right on the object updateSkyObjects() is handed.
   group.userData.moonEntries = moonEntries;
 
+  let cloudMesh = null;
+  if (planetName === "Earth") {
+    cloudMesh = buildEarthClouds();
+    group.add(cloudMesh);
+  }
+  group.userData.cloudMesh = cloudMesh;
+
+  if (planetName === "Saturn") group.add(buildSaturnRing());
+
   return group;
 }
 
@@ -137,4 +212,5 @@ export function updateSkyObjects(scene, dt) {
   group.userData.moonEntries.forEach(({ pivot, angularSpeed }) => {
     pivot.rotation.y += angularSpeed * dt;
   });
+  if (group.userData.cloudMesh) group.userData.cloudMesh.rotation.y += CLOUD_ROTATE_SPEED * dt;
 }

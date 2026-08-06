@@ -14,6 +14,7 @@ import { updateVrTourPanel } from "../xr/vrTourPanel.js";
 import { updateWalkControls } from "../surface/walkControls.js";
 import { updateSurfaceLocomotion } from "../xr/surfaceLocomotion.js";
 import { updateSkyObjects } from "../surface/skyObjects.js";
+import { updateWindParticles } from "../surface/windParticles.js";
 import { updateTour } from "../tour/tourMode.js";
 import { updateTourUI } from "../ui/tourControls.js";
 import {
@@ -159,6 +160,7 @@ export function animate() {
   // own `if (!active) return;` guard meaningful rather than load-bearing.
   if (AppState.mode === "surface") {
     updateSkyObjects(AppState.activeScene, delta);
+    updateWindParticles(AppState.activeScene, delta);
     if (AppState.xrSession) updateSurfaceLocomotion(delta);
     else updateWalkControls(delta);
   }
