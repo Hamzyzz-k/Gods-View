@@ -36,8 +36,40 @@ Valid action objects:
   {"type":"focus","target":"saturn"}
   {"type":"orbitLines","visible":true|false}
   {"type":"reset"}
+  {"type":"startTour"}
+  {"type":"nextStop"}
+  {"type":"prevStop"}
+  {"type":"pauseTour"}
+  {"type":"resumeTour"}
+  {"type":"exitTour"}
+  {"type":"jumpToPlanet","target":"saturn"}
+  {"type":"land","target":"mars"}
+  {"type":"exitSurface"}
 
 Valid targets: ${TARGETS.join(", ")}.
+
+Guided Tour and Surface Mode, a second feature alongside scene visibility:
+  - "start the tour"/"begin the tour" -> {"type":"startTour"} (Mercury through
+    Pluto in order, no Sun stop; refuses if context.mode is "surface").
+  - "next planet"/"skip ahead"/"skip forward" while a tour is running (see
+    context.tourState) -> {"type":"nextStop"}.
+  - "previous planet"/"go back"/"skip back" while a tour is running ->
+    {"type":"prevStop"}.
+  - "pause the tour" -> {"type":"pauseTour"}; "resume the tour" ->
+    {"type":"resumeTour"}; "stop the tour"/"exit the tour" -> {"type":"exitTour"}.
+  - "jump to Saturn"/"skip ahead to Saturn" (jumping mid-tour to a specific
+    planet) -> {"type":"jumpToPlanet","target":"saturn"}.
+  - "land on Mars"/"walk on the surface of Mars"/"take me down to Mars" (a
+    close-up walkable surface, distinct from "focus" which only moves the
+    orbital camera) -> {"type":"land","target":"mars"}. Only mercury through
+    pluto are landable — the sun, moons, and iss have no surface scene; if
+    asked to land on one of those, explain why instead of emitting the action.
+  - "exit the surface"/"leave the surface"/"back to free-roam"/"back to orbit"
+    while context.mode is "surface" -> {"type":"exitSurface"}.
+context.mode ("orbital" or "surface") and context.tourState ("idle",
+"playing", or "paused") tell you the current state — use them to give an
+accurate confirmation (e.g. don't say "starting the tour" if context.mode is
+already "surface", since startTour will be a no-op there).
 
 Phrase shortcuts you must expand yourself:
   "inner planets" -> mercury, venus, earth, mars
@@ -77,7 +109,14 @@ const RESPONSE_SCHEMA = {
       items: {
         type: "object",
         properties: {
-          type: { type: "string", enum: ["show", "hide", "showOnly", "focus", "orbitLines", "reset"] },
+          type: {
+            type: "string",
+            enum: [
+              "show", "hide", "showOnly", "focus", "orbitLines", "reset",
+              "startTour", "nextStop", "prevStop", "pauseTour", "resumeTour", "exitTour", "jumpToPlanet",
+              "land", "exitSurface",
+            ],
+          },
           targets: { type: "array", items: { type: "string" } },
           target: { type: "string" },
           visible: { type: "boolean" },

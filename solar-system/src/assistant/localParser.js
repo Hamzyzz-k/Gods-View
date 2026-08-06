@@ -6,6 +6,9 @@ import { planetData, sunInfo, ISS_INFO } from "../scene/planetData.js";
 import { sceneRegistry, PLANET_NAMES, INNER_PLANETS, OUTER_PLANETS, MOON_NAMES, setGroupVisible, setAllPlanetsVisible, setOrbitLinesVisible } from "./sceneRegistry.js";
 import { focusOnObject, clearFocus } from "../interaction/focus.js";
 import { AppState } from "../core/state.js";
+import { startTour, nextStop, prevStop, pauseTour, resumeTour, exitTour, jumpToPlanet } from "../tour/tourMode.js";
+import { enterSurface, exitSurface } from "../surface/surfaceMode.js";
+import { getSurfaceData } from "../surface/surfaceData.js";
 
 // Resolve every recognizable target mentioned in the text (planets, sun, moon, rings, groups).
 export function extractTargets(text) {
@@ -52,6 +55,57 @@ export function interpretCommand(raw) {
     setOrbitLinesVisible(true);
     clearFocus();
     return "Showing everything again — full solar system restored.";
+  }
+
+  // Guided Tour commands. Placed before the focus-intent block below since a
+  // couple of tour/surface phrasings ("go to the surface of Mars") would
+  // otherwise get swallowed by hasFocusIntent's "go to" trigger.
+  if (/^(start|begin) (the )?tour\b/.test(text)) {
+    const started = startTour();
+    return started ? "Starting the guided tour — Mercury first." : "Can't start the tour from the surface — exit back to free-roam first.";
+  }
+  if (/\b(next (planet|stop)|skip forward|skip ahead)\b/.test(text) && AppState.tourState !== "idle") {
+    nextStop();
+    return "Moving to the next stop.";
+  }
+  if (/\b(previous (planet|stop)|go back|skip back|last stop)\b/.test(text) && AppState.tourState !== "idle") {
+    prevStop();
+    return "Going back to the previous stop.";
+  }
+  if (/\bpause (the )?tour\b/.test(text)) {
+    pauseTour();
+    return "Tour paused.";
+  }
+  if (/\bresume (the )?tour\b/.test(text)) {
+    resumeTour();
+    return "Resuming the tour.";
+  }
+  if (/\b(exit|stop|end) (the )?tour\b/.test(text)) {
+    exitTour();
+    return "Exiting the tour.";
+  }
+  const jumpMatch = text.match(/\bjump (?:ahead )?to\s+(\w+)\b/);
+  if (jumpMatch) {
+    const name = jumpMatch[1];
+    return jumpToPlanet(name) ? `Jumping to ${name}.` : `${name} isn't on the tour itinerary — try a planet from Mercury to Pluto.`;
+  }
+
+  // Surface Mode commands.
+  const landMatch = text.match(/\b(?:land on|walk on|go (?:down )?to the surface of|surface of)\s+(?:the\s+)?(\w+)\b/);
+  if (landMatch) {
+    const name = planets.find((p) => p.data.name.toLowerCase() === landMatch[1])?.data.name;
+    if (name && getSurfaceData(name)) {
+      enterSurface(name);
+      return `Landing on ${name}.`;
+    }
+    return `Can't land on ${landMatch[1]} — try a planet from Mercury to Pluto.`;
+  }
+  if (/\b(exit|leave) (the )?surface\b|\bback to (free[- ]roam|orbit|space)\b/.test(text)) {
+    if (AppState.mode === "surface") {
+      exitSurface();
+      return "Leaving the surface, back to free-roam.";
+    }
+    return "You're not currently on a surface.";
   }
 
   // Informational questions ("tell me about Saturn", "what is this?") — answered

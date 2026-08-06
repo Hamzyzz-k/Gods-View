@@ -8,6 +8,9 @@ import { focusOnObject, clearFocus } from "../interaction/focus.js";
 import { fetchBodyFacts } from "../data/bodyFacts.js";
 import { fetchISSLive } from "../data/issLive.js";
 import { speak } from "../voice/tts.js";
+import { startTour, nextStop, prevStop, pauseTour, resumeTour, exitTour, jumpToPlanet } from "../tour/tourMode.js";
+import { enterSurface, exitSurface } from "../surface/surfaceMode.js";
+import { getSurfaceData } from "../surface/surfaceData.js";
 
 // ---------- LLM agent via the Gemini-backed Netlify Function ----------
 
@@ -22,7 +25,15 @@ export async function getSceneContext() {
   // answer instead of guessing — cached after the first lookup, so usually instant.
   const focusedFacts =
     focused === "iss" ? await fetchISSLive().catch(() => null) : focused ? await fetchBodyFacts(focused) : null;
-  return { visible, hidden, orbitLinesVisible: AppState.orbitLinesVisible, focused, focusedFacts };
+  return {
+    visible,
+    hidden,
+    orbitLinesVisible: AppState.orbitLinesVisible,
+    focused,
+    focusedFacts,
+    mode: AppState.mode,
+    tourState: AppState.tourState,
+  };
 }
 
 // Applies the { actions: [...] } array returned by the assistant to the scene.
@@ -67,6 +78,40 @@ export function applyActions(actions) {
         sceneRegistry.iss.setVisible(true);
         setOrbitLinesVisible(true);
         clearFocus();
+        break;
+      // Guided Tour actions. Delegate to tour/tourMode.js's own state-machine
+      // guards (e.g. startTour() refusing to run from Surface Mode) rather
+      // than re-checking anything here.
+      case "startTour":
+        startTour();
+        break;
+      case "nextStop":
+        nextStop();
+        break;
+      case "prevStop":
+        prevStop();
+        break;
+      case "pauseTour":
+        pauseTour();
+        break;
+      case "resumeTour":
+        resumeTour();
+        break;
+      case "exitTour":
+        exitTour();
+        break;
+      case "jumpToPlanet":
+        jumpToPlanet(action.target || "");
+        break;
+      // Surface Mode actions.
+      case "land": {
+        const target = (action.target || "").toLowerCase();
+        const name = planets.find((p) => p.data.name.toLowerCase() === target)?.data.name;
+        if (name && getSurfaceData(name)) enterSurface(name);
+        break;
+      }
+      case "exitSurface":
+        exitSurface();
         break;
     }
   });
