@@ -11,9 +11,15 @@ export let asteroidBelt = null;
 
 export function createAsteroidBelt() {
   const mars = planetData.find((p) => p.name === "Mars").distance; // 31
-  const jupiter = planetData.find((p) => p.name === "Jupiter").distance; // 42
+  const jupiter = planetData.find((p) => p.name === "Jupiter"); // distance 42, radius 3.4
   const innerR = mars + 3;
-  const outerR = jupiter - 2;
+  // Bug fix: this used to be `jupiter.distance - 2`, a flat margin off
+  // Jupiter's ORBIT PATH that ignored Jupiter's own radius (3.4) entirely —
+  // Jupiter's actual sphere reaches inward to (distance - radius), well past
+  // that outer edge, so belt asteroids visually clipped through the planet
+  // every time it swung past that point in its orbit. Subtracting the radius
+  // too keeps the belt's outer edge outside Jupiter's sphere at every angle.
+  const outerR = jupiter.distance - jupiter.radius - 1;
   const midR = (innerR + outerR) / 2;
   const halfSpan = (outerR - innerR) / 2;
   const count = 2200;
