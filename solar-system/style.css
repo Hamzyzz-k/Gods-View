@@ -23,10 +23,28 @@ canvas {
 #tierTransitionOverlay {
   position: fixed;
   inset: 0;
-  background: #05060c;
+  background: radial-gradient(circle at center, rgba(122,184,255,0.16) 0%, rgba(5,6,12,0.96) 55%, #05060c 100%);
   opacity: 0;
   pointer-events: none;
   z-index: 200;
+  overflow: hidden;
+}
+
+/* A subtle spinning radial streak pattern — a cheap, CSS-only approximation
+   of hyperspace/warp motion during the dolly, rather than a real WebGL
+   particle streak effect (not worth the added scene complexity for what's
+   only ever on screen for ~2.4s, cosmos/tierTransition.js's own duration). */
+#tierTransitionOverlay::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.07) 0deg 1deg, transparent 1deg 9deg);
+  animation: streak-spin 6s linear infinite;
+}
+
+@keyframes streak-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* Presentation/kiosk mode (src/ui/kioskMode.js) — hides every panel except
@@ -468,6 +486,7 @@ body.kiosk #kioskExitHint {
   padding: 6px 10px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   transition: opacity 0.15s ease;
+  animation: panel-pop-in 0.35s ease;
 }
 
 #scaleBreadcrumb.hidden {
@@ -529,6 +548,17 @@ body.kiosk #kioskExitHint {
   background: rgba(122,184,255,0.22);
   color: #7ab8ff;
   font-weight: 600;
+  animation: segment-glow 2.4s ease-in-out infinite;
+}
+
+@keyframes segment-glow {
+  0%, 100% { box-shadow: 0 0 0 rgba(122,184,255,0); }
+  50% { box-shadow: 0 0 10px rgba(122,184,255,0.45); }
+}
+
+@keyframes panel-pop-in {
+  from { opacity: 0; transform: translate(-50%, -6px) scale(0.97); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
 }
 
 #scaleBreadcrumbSegments .sep {
@@ -551,6 +581,7 @@ body.kiosk #kioskExitHint {
   border-radius: 24px;
   padding: 8px 10px 8px 16px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  animation: panel-pop-in 0.35s ease;
 }
 
 #tourBar button {
