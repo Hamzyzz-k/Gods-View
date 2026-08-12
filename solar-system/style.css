@@ -16,6 +16,19 @@ canvas {
   display: block;
 }
 
+/* Cosmic-scale tier transition fade — src/cosmos/tierTransition.js sets
+   opacity directly, frame by frame, in sync with the camera dolly. Above
+   every other panel (max existing z-index is 30) since it needs to
+   momentarily obscure all of them, not just the 3D view. */
+#tierTransitionOverlay {
+  position: fixed;
+  inset: 0;
+  background: #05060c;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 200;
+}
+
 #newsTicker {
   position: fixed;
   top: 0;

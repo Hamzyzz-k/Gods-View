@@ -34,6 +34,11 @@ export function enterSurface(planetName) {
   const cfg = getSurfaceData(planetName);
   if (!cfg) return false; // not a landable body (e.g. the Sun) — caller should not have offered this
   if (AppState.mode === "surface") return false; // already on a surface; land()ing again is a no-op, not a re-entry
+  // Blocked mid-cosmic-tier-transition (cosmos/tierTransition.js): its dolly
+  // is actively driving camera.position and will reparent the rig again at
+  // its own swap point regardless of what just happened here — landing
+  // during that window would have the rig fought over by both systems.
+  if (AppState.tierBusy) return false;
 
   const { camera, controls, rig, scene } = AppState;
   savedOrbitalView = { cameraPos: camera.position.clone(), target: controls.target.clone() };

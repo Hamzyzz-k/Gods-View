@@ -42,6 +42,11 @@ initDesktopSurfaceUI();
 const { initTourControls } = await import("./ui/tourControls.js");
 initTourControls();
 
+// Cosmic scale ladder: grabs the transition overlay element. Inert until a
+// tier change is actually triggered.
+const { initTierTransition } = await import("./cosmos/tierTransition.js");
+initTierTransition();
+
 // Data feeds
 await import("./data/spaceNews.js");
 

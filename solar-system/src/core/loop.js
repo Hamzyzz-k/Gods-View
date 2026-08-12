@@ -18,6 +18,7 @@ import { updateWindParticles } from "../surface/windParticles.js";
 import { updateTour } from "../tour/tourMode.js";
 import { updateTourUI } from "../ui/tourControls.js";
 import { getTierById } from "../cosmos/tierData.js";
+import { updateTierTransition } from "../cosmos/tierTransition.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
@@ -178,6 +179,12 @@ export function animate() {
   // at the bottom of this function for why that's deliberate).
   const activeTier = getTierById(AppState.tier);
   if (activeTier?.update) activeTier.update(AppState.activeScene, delta);
+
+  // Cinematic tier transition, if one is in flight. No-op (single flag
+  // check) the rest of the time. Disables controls.enabled for its own
+  // duration, so the unconditional controls.update() below correctly skips
+  // itself rather than fighting the transition's own camera.position writes.
+  updateTierTransition();
 
   // OrbitControls is meaningless during an XR session — the headset owns the
   // camera — and sessionManager disables it on session start, but this guard

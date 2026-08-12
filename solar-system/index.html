@@ -10,6 +10,12 @@
 </head>
 <body>
 
+  <!-- Full-screen fade used only during a cosmic-scale tier transition
+       (src/cosmos/tierTransition.js) — opacity is driven procedurally,
+       frame by frame, in sync with the camera dolly, not by a CSS
+       transition. -->
+  <div id="tierTransitionOverlay"></div>
+
   <div id="newsTicker">
     <div id="newsTickerTrack"><span id="newsTickerStatus">Loading latest space news…</span></div>
   </div>
