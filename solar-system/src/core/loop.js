@@ -11,6 +11,7 @@ import { updateControllerRaycast } from "../xr/controllerRaycast.js";
 import { updateVrControlPanel } from "../xr/vrControlPanel.js";
 import { updateVrInfoPanel } from "../xr/vrInfoPanel.js";
 import { updateVrTourPanel } from "../xr/vrTourPanel.js";
+import { updateVrScalePanel } from "../xr/vrScalePanel.js";
 import { updateWalkControls } from "../surface/walkControls.js";
 import { updateSurfaceLocomotion } from "../xr/surfaceLocomotion.js";
 import { updateSkyObjects } from "../surface/skyObjects.js";
@@ -19,6 +20,7 @@ import { updateTour } from "../tour/tourMode.js";
 import { updateTourUI } from "../ui/tourControls.js";
 import { getTierById } from "../cosmos/tierData.js";
 import { updateTierTransition } from "../cosmos/tierTransition.js";
+import { updateScaleBreadcrumb } from "../ui/scaleBreadcrumb.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
@@ -150,6 +152,7 @@ export function animate() {
   if (AppState.xrSession) rig.updateMatrixWorld(true); // focus may have moved the rig again just above
   updateVrInfoPanel();
   updateVrTourPanel();
+  updateVrScalePanel();
 
   // Surface Mode. Sky objects (moon orbits) animate regardless of which
   // locomotion scheme is driving the player; walking itself branches on the
@@ -185,6 +188,7 @@ export function animate() {
   // duration, so the unconditional controls.update() below correctly skips
   // itself rather than fighting the transition's own camera.position writes.
   updateTierTransition();
+  updateScaleBreadcrumb();
 
   // OrbitControls is meaningless during an XR session — the headset owns the
   // camera — and sessionManager disables it on session start, but this guard

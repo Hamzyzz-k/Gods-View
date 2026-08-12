@@ -47,6 +47,10 @@ initTourControls();
 const { initTierTransition } = await import("./cosmos/tierTransition.js");
 initTierTransition();
 
+// Cosmic scale ladder (desktop): the always-visible breadcrumb bar.
+const { initScaleBreadcrumb } = await import("./ui/scaleBreadcrumb.js");
+initScaleBreadcrumb();
+
 // Data feeds
 await import("./data/spaceNews.js");
 
@@ -90,6 +94,8 @@ const { initVrInfoPanel } = await import("./xr/vrInfoPanel.js");
 initVrInfoPanel();
 const { initVrTourPanel } = await import("./xr/vrTourPanel.js");
 initVrTourPanel();
+const { initVrScalePanel } = await import("./xr/vrScalePanel.js");
+initVrScalePanel();
 const { initControllerRaycast } = await import("./xr/controllerRaycast.js");
 initControllerRaycast();
 

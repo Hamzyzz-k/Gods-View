@@ -385,6 +385,90 @@ canvas {
   pointer-events: none;
 }
 
+#scaleBreadcrumb {
+  position: fixed;
+  top: 44px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(10, 12, 24, 0.72);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 24px;
+  padding: 6px 10px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transition: opacity 0.15s ease;
+}
+
+#scaleBreadcrumb.hidden {
+  display: none !important;
+}
+
+#scaleBreadcrumb.busy {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+#scaleBreadcrumb button {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e8ecf7;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+#scaleBreadcrumb button:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+#scaleBreadcrumb button:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
+}
+
+#scaleBreadcrumbSegments {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 2px;
+}
+
+#scaleBreadcrumbSegments button {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.55);
+  border-radius: 14px;
+  padding: 5px 10px;
+  font-size: 12px;
+  cursor: pointer;
+  width: auto;
+  height: auto;
+}
+
+#scaleBreadcrumbSegments button:hover {
+  background: rgba(255,255,255,0.1);
+  color: #e8ecf7;
+}
+
+#scaleBreadcrumbSegments button.active {
+  background: rgba(122,184,255,0.22);
+  color: #7ab8ff;
+  font-weight: 600;
+}
+
+#scaleBreadcrumbSegments .sep {
+  color: rgba(255,255,255,0.3);
+  font-size: 11px;
+}
+
 #tourBar {
   position: fixed;
   bottom: 16px;

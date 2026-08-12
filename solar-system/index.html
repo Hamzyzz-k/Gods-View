@@ -50,6 +50,18 @@
 
   <div id="tooltip"></div>
 
+  <!-- The cosmic scale ladder's always-visible navigation (see
+       ui/scaleBreadcrumb.js). Segments are populated at runtime from
+       cosmos/tierData.js's ordered ladder, so the button count grows as
+       more tiers are added without touching this markup. Hidden only while
+       AppState.mode === 'surface' (see ui/scaleBreadcrumb.js) — tier
+       navigation has no meaning while walking on a planet. -->
+  <div id="scaleBreadcrumb">
+    <button id="tierDescendBtn" title="Zoom in">−</button>
+    <span id="scaleBreadcrumbSegments"></span>
+    <button id="tierAscendBtn" title="Zoom out">+</button>
+  </div>
+
   <!-- Shown only while a guided tour is active (see ui/tourControls.js). -->
   <div id="tourBar" class="hidden">
     <button id="tourPrevBtn" title="Previous planet">⏮</button>
