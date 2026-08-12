@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
 import { createStarfield } from "../core/starfield.js";
-import { buildMilkyWayContent, buildMilkyWayHomeMarker } from "./milkyWay.js";
+import { buildMilkyWayContent, buildMilkyWayHomeMarker, buildHomeMarker } from "./milkyWay.js";
 import { buildGalaxiesForTier } from "./galaxyFactory.js";
 
 // ---------- the cosmic scale ladder ----------
@@ -67,6 +67,26 @@ export const TIER_DATA = [
       createStarfield(scene);
       scene.add(buildMilkyWayHomeMarker()); // "home" reference point — the Milky Way itself is a member of this group too, just not one you click through to a spiral from here
       scene.add(buildGalaxiesForTier("localGroup", 800, 5000, 2800000));
+      return scene;
+    },
+  },
+  {
+    id: "supercluster",
+    label: "Local Supercluster",
+    // Supercluster-tier members range from Centaurus A (~12M ly) to the
+    // Virgo Cluster (~53.5M ly, the farthest) — see cosmos/galaxyData.js.
+    // dMaxLy 55M gives slight headroom past that real distance.
+    defaultView: { cameraPos: [0, 4000, 7500], target: [0, 0, 0] },
+    cameraNear: 10,
+    cameraFar: 200000,
+    controlsMax: 15000,
+    buildScene: () => {
+      const scene = new THREE.Scene();
+      scene.name = "tier:supercluster";
+      scene.add(new THREE.AmbientLight(0x445566, 0.8));
+      createStarfield(scene);
+      scene.add(buildHomeMarker("Local Group (Home)", 0x7ab8ff)); // points back at where the Milky Way/Andromeda/etc. all sit together, one tier in
+      scene.add(buildGalaxiesForTier("supercluster", 1000, 6000, 55000000));
       return scene;
     },
   },

@@ -157,17 +157,26 @@ function buildYouAreHereMarker() {
   return group;
 }
 
-// A "home" marker for OTHER tiers (Local Group, Supercluster, ...) that
-// want to show roughly where the Milky Way itself sits, without pulling in
-// this tier's own full spiral/core content. Reuses the same glow+label
-// sprite helpers the You-Are-Here marker above already uses.
-export function buildMilkyWayHomeMarker() {
+// A generic "you're home / this way back" marker for outer tiers that want
+// to point at whatever the previous, more-zoomed-in tier's own content was,
+// without pulling in that tier's full scene. Reuses the same glow+label
+// sprite helpers the Milky Way tier's own You-Are-Here marker above uses.
+export function buildHomeMarker(label, hexColor) {
   const group = new THREE.Group();
+  group.name = "homeMarker";
+  group.add(makeGlowSprite(hexColor, 220, 0.6));
+  const labelSprite = makeLabelSprite(label);
+  labelSprite.position.y = 160;
+  group.add(labelSprite);
+  return group;
+}
+
+// The Local Group tier's specific instance — kept as a named export (rather
+// than every caller re-passing the same label/color) since it's the one
+// used in more than one place already.
+export function buildMilkyWayHomeMarker() {
+  const group = buildHomeMarker("Milky Way (Home)", 0xffe0b0);
   group.name = "milkyWayHomeMarker";
-  group.add(makeGlowSprite(0xffe0b0, 220, 0.6));
-  const label = makeLabelSprite("Milky Way (Home)");
-  label.position.y = 160;
-  group.add(label);
   return group;
 }
 
