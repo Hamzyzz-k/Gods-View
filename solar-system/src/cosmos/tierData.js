@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
 import { createStarfield } from "../core/starfield.js";
+import { buildMilkyWayContent } from "./milkyWay.js";
 
 // ---------- the cosmic scale ladder ----------
 // Ordered innermost (solar system) to outermost. `defaultView` is only used
@@ -30,20 +31,20 @@ export const TIER_DATA = [
   {
     id: "milkyWay",
     label: "Milky Way",
-    defaultView: { cameraPos: [0, 400, 900], target: [0, 0, 0] },
+    // Just outside the spiral's own visual edge (~2860 units — see
+    // cosmos/milkyWay.js's GALAXY_RADIUS), looking down at a gentle angle
+    // so the arm structure actually reads as a spiral rather than an
+    // edge-on line.
+    defaultView: { cameraPos: [0, 2200, 3400], target: [0, 0, 0] },
     cameraNear: 1,
     cameraFar: 20000,
     controlsMax: 6000,
-    // Placeholder: a starfield void proves the tier-swap machinery end to
-    // end (scene cache, rig reparenting, saved-view restore, per-tier
-    // camera bounds, per-tier picking) before any real galaxy content
-    // exists to obscure whether that plumbing actually works. The real
-    // spiral/core/You-Are-Here marker replace this in a later phase.
     buildScene: () => {
       const scene = new THREE.Scene();
       scene.name = "tier:milkyWay";
       scene.add(new THREE.AmbientLight(0x445566, 0.8));
-      createStarfield(scene);
+      createStarfield(scene); // distant background stars, behind the galaxy itself — same depth cue used at every other tier
+      scene.add(buildMilkyWayContent());
       return scene;
     },
   },
