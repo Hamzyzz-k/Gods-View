@@ -67,7 +67,11 @@ const CONSTELLATIONS = [
     ], lines: [[0,1],[1,2],[2,3],[3,0]] },
 ];
 
-function raDecToVec3(raHours, decDeg, radius) {
+// Exported for cosmos/galaxyFactory.js — real (approximate) equatorial
+// coordinates aren't only useful for drawing constellations on the
+// celestial sphere; a galaxy's real sky direction reuses the exact same
+// conversion, just at a different tier's scale.
+export function raDecToVec3(raHours, decDeg, radius) {
   const raRad = THREE.MathUtils.degToRad(raHours * 15);
   const decRad = THREE.MathUtils.degToRad(decDeg);
   return new THREE.Vector3(

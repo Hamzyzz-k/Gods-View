@@ -2,6 +2,7 @@ import { AppState } from "../core/state.js";
 import { sun } from "../scene/sun.js";
 import { planets, orbitLines, allMoonMeshes } from "../scene/planetFactory.js";
 import { asteroidBelt } from "../scene/asteroidBelt.js";
+import { setAllGalaxiesVisible, areGalaxiesVisible } from "../cosmos/galaxyFactory.js";
 const { scene } = AppState;
 
 // ---------- AI scene-control agent ----------
@@ -122,6 +123,16 @@ sceneRegistry["constellations"] = {
   isVisible() {
     return AppState.constellations.visible;
   },
+};
+// Galaxies (cosmos/galaxyData.js, built per-tier by cosmos/galaxyFactory.js)
+// live across several different tier scenes, most of which aren't the
+// active one right now — unlike every entry above, whose mesh is a direct
+// child of THIS scene. One flag covers every galaxy ever built regardless
+// of which tier it's currently sitting in, so the choice still holds once
+// that tier is actually entered.
+sceneRegistry["galaxies"] = {
+  setVisible: setAllGalaxiesVisible,
+  isVisible: areGalaxiesVisible,
 };
 
 export function setGroupVisible(names, visible) {
