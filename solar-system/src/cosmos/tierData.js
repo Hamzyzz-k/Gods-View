@@ -1,7 +1,8 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
 import { createStarfield } from "../core/starfield.js";
-import { buildMilkyWayContent } from "./milkyWay.js";
+import { buildMilkyWayContent, buildMilkyWayHomeMarker } from "./milkyWay.js";
+import { buildGalaxiesForTier } from "./galaxyFactory.js";
 
 // ---------- the cosmic scale ladder ----------
 // Ordered innermost (solar system) to outermost. `defaultView` is only used
@@ -45,6 +46,27 @@ export const TIER_DATA = [
       scene.add(new THREE.AmbientLight(0x445566, 0.8));
       createStarfield(scene); // distant background stars, behind the galaxy itself — same depth cue used at every other tier
       scene.add(buildMilkyWayContent());
+      return scene;
+    },
+  },
+  {
+    id: "localGroup",
+    label: "Local Group",
+    // Local Group members range from the LMC (~163,000 ly) to Andromeda/
+    // Triangulum (~2.5-2.7 million ly) — see cosmos/galaxyData.js. Bounds
+    // and dMaxLy (2.8M, slight headroom past Triangulum's real distance)
+    // feed buildGalaxiesForTier()'s log-distance compression below.
+    defaultView: { cameraPos: [0, 3000, 5500], target: [0, 0, 0] },
+    cameraNear: 5,
+    cameraFar: 30000,
+    controlsMax: 9000,
+    buildScene: () => {
+      const scene = new THREE.Scene();
+      scene.name = "tier:localGroup";
+      scene.add(new THREE.AmbientLight(0x445566, 0.8));
+      createStarfield(scene);
+      scene.add(buildMilkyWayHomeMarker()); // "home" reference point — the Milky Way itself is a member of this group too, just not one you click through to a spiral from here
+      scene.add(buildGalaxiesForTier("localGroup", 800, 5000, 2800000));
       return scene;
     },
   },
