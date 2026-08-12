@@ -1,8 +1,8 @@
 {
-  "name": "solar-system-vr",
+  "name": "gods-view",
   "version": "1.0.0",
   "private": true,
-  "description": "Immersive WebXR solar system — static Three.js site plus Netlify Functions",
+  "description": "God's View — an immersive, edutainment-focused cosmos explorer, static Three.js site plus Netlify Functions",
   "author": "Hamzyzz-k",
   "type": "module",
   "engines": {

@@ -1,8 +1,10 @@
-# Immersive VR Solar System
+# God's View
 
-A Three.js solar system that runs both as a desktop web app (mouse orbit,
-click-to-focus) and as an immersive WebXR VR experience (free-flight
-locomotion, controller laser-pointer selection, voice control).
+An immersive, edutainment-focused cosmos explorer built with Three.js — from
+standing on a planet's surface to zooming out through the Milky Way and the
+observable universe, on desktop (mouse orbit, click-to-focus) or in immersive
+WebXR VR (free-flight locomotion, controller laser-pointer selection, voice
+control).
 
 Static site, no build step — ES modules loaded via an importmap, plus two
 Netlify Functions that hold API keys server-side.
