@@ -29,6 +29,45 @@ canvas {
   z-index: 200;
 }
 
+/* Presentation/kiosk mode (src/ui/kioskMode.js) — hides every panel except
+   the WebGL canvas and the exit hint below, so a demo runs unattended with
+   nothing but the scene itself on screen. */
+body.kiosk #scaleBreadcrumb,
+body.kiosk #newsTicker,
+body.kiosk #ui,
+body.kiosk #tooltip,
+body.kiosk #tourBar,
+body.kiosk #ttsToggleBtn,
+body.kiosk #ambientToggleBtn,
+body.kiosk #exitSurfaceBtn,
+body.kiosk #surfaceHint,
+body.kiosk #eventToast,
+body.kiosk #eclipseCalModal,
+body.kiosk #infoPanel,
+body.kiosk #agentPanel {
+  display: none !important;
+}
+
+#kioskExitHint {
+  display: none;
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 300;
+  background: rgba(10, 12, 24, 0.55);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 11px;
+  color: rgba(232, 236, 247, 0.6);
+  pointer-events: none;
+}
+
+body.kiosk #kioskExitHint {
+  display: block;
+}
+
 #newsTicker {
   position: fixed;
   top: 0;

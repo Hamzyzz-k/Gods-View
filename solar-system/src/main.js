@@ -51,6 +51,10 @@ initTierTransition();
 const { initScaleBreadcrumb } = await import("./ui/scaleBreadcrumb.js");
 initScaleBreadcrumb();
 
+// Presentation/kiosk mode. Inert until the button is clicked.
+const { initKioskMode } = await import("./ui/kioskMode.js");
+initKioskMode();
+
 // Data feeds
 await import("./data/spaceNews.js");
 
