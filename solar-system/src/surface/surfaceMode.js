@@ -39,6 +39,17 @@ export function enterSurface(planetName) {
   // its own swap point regardless of what just happened here — landing
   // during that window would have the rig fought over by both systems.
   if (AppState.tierBusy) return false;
+  // The 9 landable planets only exist as meshes in the solar-system tier
+  // (cosmos/tierData.js). This module's own exitSurface() hardcodes
+  // `scene.add(rig)` — always AppState.scene, the solar-system tier's
+  // scene — as the return destination; entering from any other tier would
+  // silently desync AppState.tier from where the rig actually ends up.
+  // interaction/raycastPicking.js's double-click trigger already can't
+  // reach this except from that tier (its own clickable set is tier-
+  // scoped), but voice/chat ("land on Mars") calls this directly with no
+  // such guard of its own, so the check belongs here, once, rather than at
+  // every caller.
+  if (AppState.tier !== "solarSystem") return false;
 
   const { camera, controls, rig, scene } = AppState;
   savedOrbitalView = { cameraPos: camera.position.clone(), target: controls.target.clone() };

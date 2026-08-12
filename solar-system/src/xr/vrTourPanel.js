@@ -71,8 +71,8 @@ export function redrawTourPanel() {
   ctx.stroke();
 
   const itinerary = getItinerary();
-  const name = itinerary[AppState.tourIndex] || "";
-  const label = name ? `${AppState.tourIndex + 1}/${itinerary.length} · ${name}` : "";
+  const stop = itinerary[AppState.tourIndex];
+  const label = stop ? `${AppState.tourIndex + 1}/${itinerary.length} · ${stop.label}` : "";
   ctx.font = "34px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";

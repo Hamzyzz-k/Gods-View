@@ -2,6 +2,7 @@ import { AppState } from "../core/state.js";
 import { startTour, nextStop, prevStop, pauseTour, resumeTour, exitTour, getItinerary } from "../tour/tourMode.js";
 
 const startBtn = document.getElementById("startTourBtn");
+const cosmicTourBtn = document.getElementById("startCosmicTourBtn");
 const bar = document.getElementById("tourBar");
 const prevBtn = document.getElementById("tourPrevBtn");
 const playPauseBtn = document.getElementById("tourPlayPauseBtn");
@@ -11,7 +12,13 @@ const stopLabel = document.getElementById("tourStopLabel");
 const ttsToggleBtn = document.getElementById("ttsToggleBtn");
 
 export function initTourControls() {
-  startBtn.addEventListener("click", startTour);
+  // Explicit wrapper, not `startBtn.addEventListener("click", startTour)`:
+  // addEventListener calls its handler with the MouseEvent as the first
+  // argument, which would otherwise land in startTour()'s own
+  // `itineraryName = "planets"` default parameter slot and silently defeat
+  // it (a truthy Event, not undefined, so the default never kicks in).
+  startBtn.addEventListener("click", () => startTour("planets"));
+  cosmicTourBtn?.addEventListener("click", () => startTour("cosmic"));
   prevBtn.addEventListener("click", prevStop);
   nextBtn.addEventListener("click", nextStop);
   exitBtn.addEventListener("click", exitTour);
@@ -40,7 +47,7 @@ export function updateTourUI() {
   playPauseBtn.textContent = AppState.tourState === "paused" ? "▶" : "⏸";
   playPauseBtn.title = AppState.tourState === "paused" ? "Resume tour" : "Pause tour";
   const itinerary = getItinerary();
-  const name = itinerary[AppState.tourIndex] || "";
-  stopLabel.textContent = name ? `${AppState.tourIndex + 1}/${itinerary.length} · ${name}` : "";
+  const stop = itinerary[AppState.tourIndex];
+  stopLabel.textContent = stop ? `${AppState.tourIndex + 1}/${itinerary.length} · ${stop.label}` : "";
   prevBtn.disabled = AppState.tourIndex <= 0;
 }
