@@ -6,8 +6,9 @@ import { showToast } from "../ui/toast.js";
 
 // ---------- cinematic tier transition ----------
 // Wraps tierNavigation.js's instant enterTier() between a camera dolly-out
-// (in the tier being left), a brief full-opacity hold (the actual scene
-// swap happens here, invisibly), and a dolly-in (in the tier being
+// (in the tier being left), a brief hold behind a translucent veil (the
+// actual scene swap happens here — see MAX_OVERLAY_OPACITY below for why
+// the veil is never fully opaque), and a dolly-in (in the tier being
 // arrived at). enterTier() stays the one load-bearing primitive
 // underneath every way a tier can be reached — this only adds motion
 // around it, the same "wrap, don't replace" relationship
@@ -26,6 +27,15 @@ const HOLD_MS = 400;
 const DOLLY_IN_MS = 1000;
 const TOTAL_MS = DOLLY_OUT_MS + HOLD_MS + DOLLY_IN_MS;
 const PUSH_FACTOR = 2.6; // how far the camera dollies, as a multiple of its current distance from target
+
+// The overlay never reaches full opacity — a translucent veil rather than a
+// solid wall. The scene swap still happens behind it (still instant, still
+// at the DOLLY_OUT_MS mark below), but because the veil tops out well under
+// 1, the destination tier is already faintly visible through it the moment
+// it's swapped in, and grows clearer as the veil lifts during dolly-in —
+// reading as the destination coalescing into view rather than a hard cut
+// behind a blackout.
+const MAX_OVERLAY_OPACITY = 0.6;
 
 let active = null; // { targetId, startTime, outFrom, outTo, swapped, inFrom, inTo }
 let overlay = null;
@@ -56,7 +66,7 @@ function beginTransition(targetId) {
     outTo: pushedOutFrom(camera.position, controls.target, PUSH_FACTOR),
     swapped: false,
   };
-  showToast("🌌 Traveling…", `Heading to ${tier.label}…`, TOTAL_MS);
+  showToast("Traveling…", `Heading to ${tier.label}…`, TOTAL_MS);
   return true;
 }
 
@@ -122,19 +132,19 @@ export function updateTierTransition() {
   if (elapsed < DOLLY_OUT_MS) {
     const t = easeInOutCubic(elapsed / DOLLY_OUT_MS);
     camera.position.lerpVectors(active.outFrom, active.outTo, t);
-    if (overlay) overlay.style.opacity = String(t);
+    if (overlay) overlay.style.opacity = String(t * MAX_OVERLAY_OPACITY);
     return;
   }
 
   if (elapsed < DOLLY_OUT_MS + HOLD_MS) {
-    if (overlay) overlay.style.opacity = "1";
+    if (overlay) overlay.style.opacity = String(MAX_OVERLAY_OPACITY);
     return;
   }
 
   if (elapsed < TOTAL_MS) {
     const t = easeInOutCubic((elapsed - DOLLY_OUT_MS - HOLD_MS) / DOLLY_IN_MS);
     camera.position.lerpVectors(active.inFrom, active.inTo, t);
-    if (overlay) overlay.style.opacity = String(1 - t);
+    if (overlay) overlay.style.opacity = String((1 - t) * MAX_OVERLAY_OPACITY);
     return;
   }
 

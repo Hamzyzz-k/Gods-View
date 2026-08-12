@@ -53,7 +53,7 @@ function syncPositionBelowControlPanel() {
 export function showListening() {
   clearTimeout(hideTimer);
   syncPositionBelowControlPanel();
-  draw("🎤 Listening…", "#ff6b6b");
+  draw("Listening…", "#ff6b6b");
   voiceIndicator.mesh.visible = true;
 }
 

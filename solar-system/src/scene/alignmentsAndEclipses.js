@@ -91,7 +91,7 @@ export function checkPlanetAlignments() {
     const key = g.map((p) => p.key).sort().join(",");
     if (!activeAlignmentKeys.has(key)) {
       const names = g.map((p) => p.name).join(" and ");
-      showToast("✨ Planetary alignment", `${names} have lined up in their orbits, as seen from the Sun.`, 6000);
+      showToast("Planetary alignment", `${names} have lined up in their orbits, as seen from the Sun.`, 6000);
     }
     g.forEach((p) => addAlignmentHighlight(p.mesh));
   });
@@ -104,7 +104,7 @@ export function checkPlanetAlignments() {
   activeAlignmentKeys = newKeys;
 }
 
-// "✨ Align Planets" button — smoothly tweens every planet's orbital angle to
+// "Align Planets" button — smoothly tweens every planet's orbital angle to
 // the same heliocentric angle so you can see a conjunction on demand instead
 // of waiting for one to happen naturally. Once the tween finishes, normal
 // motion resumes and the drift-apart (and the alignment toast/glow above)
@@ -122,7 +122,7 @@ export function startAlignAnimation() {
     return { pivot, start, delta };
   });
   AppState.alignTween = { startTime: performance.now(), duration: 2600, items, pivots: new Set(items.map((i) => i.pivot)) };
-  showToast("✨ Aligning the planets…", "Watch them swing into a straight line from the Sun.", 3200);
+  showToast("Aligning the planets…", "Watch them swing into a straight line from the Sun.", 3200);
 }
 
 // ---- Sun-Earth-Moon eclipse detection ----
@@ -158,7 +158,7 @@ export function checkEclipse() {
     solarEclipseActive = true;
     sunLightTargetIntensity = SUN_LIGHT_BASE * 0.4;
     ambientTargetIntensity = AMBIENT_BASE * 0.6;
-    showToast("☀️🌑 Solar eclipse", "The Moon has passed directly between the Sun and Earth, briefly dimming the light.", 7000);
+    showToast("Solar eclipse", "The Moon has passed directly between the Sun and Earth, briefly dimming the light.", 7000);
   } else if (!isSolar && solarEclipseActive) {
     solarEclipseActive = false;
     sunLightTargetIntensity = SUN_LIGHT_BASE;
@@ -167,12 +167,12 @@ export function checkEclipse() {
 
   if (isLunar && !lunarEclipseActive) {
     lunarEclipseActive = true;
-    showToast("🌕🌑 Lunar eclipse", "The Moon has slipped into Earth's shadow, dimming and reddening it — a \u201cblood moon.\u201d", 7000);
+    showToast("Lunar eclipse", "The Moon has slipped into Earth's shadow, dimming and reddening it — a \u201cblood moon.\u201d", 7000);
   } else if (!isLunar && lunarEclipseActive) {
     lunarEclipseActive = false;
   }
 }
 
-// "☀️ Solar Eclipse" / "🌕 Lunar Eclipse" buttons — briefly freeze Earth in
+// "Solar Eclipse" / "Lunar Eclipse" buttons — briefly freeze Earth in
 // place and swing the Moon into the Sun-Earth line so either configuration
 // can be previewed without waiting for it to line up on its own.

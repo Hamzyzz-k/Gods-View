@@ -21,7 +21,7 @@ const BUTTONS = [
   { domId: "tourPrevBtn", icon: "⏮" },
   { domId: "tourPlayPauseBtn", icon: () => (document.getElementById("tourPlayPauseBtn")?.textContent === "▶" ? "▶" : "⏸") },
   { domId: "tourNextBtn", icon: "⏭" },
-  { domId: "tourExitBtn", icon: "🚪" },
+  { domId: "tourExitBtn", icon: "EXIT" },
 ];
 
 const PADDING = 20;
@@ -52,11 +52,11 @@ function drawButton(ctx, x, y, size, btn) {
   ctx.stroke();
 
   const icon = typeof btn.icon === "function" ? btn.icon() : btn.icon;
-  ctx.font = "50px sans-serif";
+  ctx.font = icon.length <= 1 ? "50px sans-serif" : "26px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = COLORS.text;
-  ctx.fillText(icon, x + size / 2, y + size / 2 + 4);
+  ctx.fillText(icon, x + size / 2, y + size / 2 + 2, size - 14);
 }
 
 export function redrawTourPanel() {

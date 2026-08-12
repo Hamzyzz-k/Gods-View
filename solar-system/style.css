@@ -66,6 +66,7 @@ body.kiosk #agentPanel,
 body.kiosk #tripLogModal,
 body.kiosk #quizModal,
 body.kiosk #landmarksModal,
+body.kiosk #sizeCompareModal,
 body.kiosk #exitLandmarkBtn {
   display: none !important;
 }
@@ -222,7 +223,9 @@ body.kiosk #kioskExitHint {
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #e8ecf7;
-  font-size: 18px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
   cursor: pointer;
   box-shadow: 0 8px 24px rgba(0,0,0,0.4);
   transition: background 0.15s ease, transform 0.15s ease;
@@ -1185,4 +1188,197 @@ body.kiosk #kioskExitHint {
   padding: 9px;
   font-size: 13px;
   cursor: pointer;
+}
+
+/* ---------- size comparison panel (src/ui/sizeComparePanel.js) ---------- */
+#sizeCompareModal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#sizeCompareModal.visible {
+  display: flex;
+}
+#sizeCompareBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+#sizeCompareCard {
+  position: relative;
+  z-index: 1;
+  width: min(720px, 94vw);
+  max-height: 86vh;
+  overflow-y: auto;
+  background: rgba(14, 16, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 20px 22px;
+  color: #e8ecf7;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+}
+#sizeCompareCard h3 {
+  font-size: 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(90deg, #ffd27a, #7ab8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+#sizeCompareClose {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #e8ecf7;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+#sizeCompareClose:hover {
+  opacity: 1;
+}
+#sizeCompareSearch {
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e8ecf7;
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-size: 13px;
+  outline: none;
+  margin-bottom: 10px;
+}
+#sizeCompareSearch::placeholder {
+  color: rgba(232,236,247,0.4);
+}
+#sizeCompareList {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+.size-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  font-size: 12px;
+  cursor: pointer;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.size-row:last-child {
+  border-bottom: none;
+}
+.size-row:hover {
+  background: rgba(255,255,255,0.08);
+}
+.size-row.selected {
+  background: rgba(122,184,255,0.16);
+}
+.size-row-name {
+  font-weight: 600;
+}
+.size-row-meta {
+  opacity: 0.55;
+  font-size: 11px;
+  white-space: nowrap;
+}
+#sizeCompareSelected {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 18px;
+  min-height: 20px;
+}
+.size-chip {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,210,122,0.14);
+  border: 1px solid rgba(255,210,122,0.4);
+  color: #ffd27a;
+  border-radius: 999px;
+  padding: 4px 6px 4px 12px;
+  font-size: 12px;
+}
+.size-chip button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  opacity: 0.7;
+  padding: 2px 6px;
+}
+.size-chip button:hover {
+  opacity: 1;
+}
+
+/* Proportionally-sized circles, bottom-aligned like the classic "planets
+   lined up by size" infographic — see src/ui/sizeComparePanel.js's header
+   for why this replaced an earlier log-scale-axis version. Every column
+   shares a fixed height and packs its circle+label to the bottom
+   (justify-content: flex-end), which lines up circle bottoms across
+   columns without needing to compute pixel offsets by hand: the label
+   block's height is the same in every column, so "pack to the bottom"
+   alone is enough to align the circles sitting above it. */
+#sizeCompareBar {
+  position: relative;
+  min-height: 40px;
+}
+.size-bar-empty {
+  opacity: 0.5;
+  font-size: 12px;
+  text-align: center;
+  padding: 20px 0;
+}
+.size-body-row {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 18px 22px;
+  padding: 20px 6px 6px;
+}
+.size-body-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  height: 210px;
+}
+.size-body-circle {
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.size-body-label {
+  margin-top: 10px;
+  font-size: 12px;
+  text-align: center;
+  white-space: nowrap;
+  max-width: 120px;
+  white-space: normal;
+}
+.size-body-value {
+  display: block;
+  opacity: 0.55;
+  font-size: 10px;
+  margin-top: 2px;
+}
+.size-body-credit {
+  display: block;
+  opacity: 0.4;
+  font-size: 9px;
+  font-style: italic;
+  margin-top: 1px;
 }

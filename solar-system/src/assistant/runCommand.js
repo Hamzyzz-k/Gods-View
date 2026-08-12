@@ -12,7 +12,7 @@ import { startTour, nextStop, prevStop, pauseTour, resumeTour, exitTour, jumpToP
 import { enterSurface, exitSurface } from "../surface/surfaceMode.js";
 import { getSurfaceData } from "../surface/surfaceData.js";
 import { ascendTierCinematic, descendTierCinematic, jumpToTierCinematic } from "../cosmos/tierTransition.js";
-import { GALAXY_DATA } from "../cosmos/galaxyData.js";
+import { locateAndShow } from "./entityLocator.js";
 
 // ---------- LLM agent via the Gemini-backed Netlify Function ----------
 
@@ -132,17 +132,16 @@ export function applyActions(actions) {
       case "startCosmicTour":
         startTour("cosmic");
         break;
-      case "focusGalaxy": {
-        const name = (action.target || "").toLowerCase();
-        const entry = GALAXY_DATA.find((g) => g.name.toLowerCase() === name || g.altName?.toLowerCase() === name);
-        // Scoped to the currently active tier, same boundary
-        // assistant/localParser.js's local-parser path applies — a galaxy
-        // from a different tier isn't focusable without navigating there
-        // first (see jumpToTier above, or startCosmicTour).
-        const obj = entry ? AppState.activeScene.getObjectByName(entry.name) : null;
-        if (obj) focusOnObject(obj);
+      // Any named galaxy, black hole, or Earth landmark, from wherever the
+      // user currently is — jumps tiers (or back to the solar system, for a
+      // landmark) first if needed, rather than requiring the model to
+      // sequence a separate jumpToTier action itself first. See
+      // assistant/entityLocator.js's own header for why that hand-off is
+      // more reliable done here than left to the model to get the ordering
+      // right on every request.
+      case "locate":
+        locateAndShow(action.target || "");
         break;
-      }
     }
   });
 }

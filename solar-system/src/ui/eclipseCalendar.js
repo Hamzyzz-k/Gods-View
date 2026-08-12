@@ -33,12 +33,11 @@ export function renderEclipseCalendar() {
   const list = upcoming.length ? upcoming : REAL_ECLIPSES; // fall back to the full list once we're past the last entry
   eclipseCalBody.innerHTML = list
     .map((e) => {
-      const icon = e.kind === "solar" ? "☀️" : "🌕";
       const label = e.kind === "solar" ? "Solar" : "Lunar";
       const d = new Date(e.date + "T00:00:00Z");
       const dateStr = d.toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric", timeZone: "UTC" });
       return `<div class="eclipse-row">
-        <div class="eclipse-row-head">${icon} <strong>${e.type} ${label} Eclipse</strong> — ${dateStr}</div>
+        <div class="eclipse-row-head"><strong>${e.type} ${label} Eclipse</strong> — ${dateStr}</div>
         <div class="eclipse-row-body">${e.visibility}</div>
       </div>`;
     })

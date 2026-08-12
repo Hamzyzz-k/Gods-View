@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { registerTierClickables } from "../interaction/raycastPicking.js";
+import { buildBlackHole } from "./blackHole.js";
 
 // ---------- Milky Way tier content ----------
 // Stylized, not scientifically accurate — the same "plausible, not to
@@ -120,18 +121,16 @@ function buildGalacticCore() {
   const group = new THREE.Group();
   group.name = "milkyWayCore";
 
-  const geo = new THREE.SphereGeometry(40, 24, 24);
-  const mat = new THREE.MeshBasicMaterial({ color: 0xfff2d0 });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.name = "Sagittarius A*";
   // Same info-panel contract every clickable body in this app uses
   // (scene/planetData.js) — showInfoFor() reads userData.info directly and
   // unconditionally iterates `meta`, so it must always be a real object.
-  mesh.userData.info = {
-    name: "Sagittarius A*",
-    meta: { Type: "Supermassive black hole", Mass: "~4.1 million M☉", "Distance from Sun": "~26,000 ly" },
-    info: "The supermassive black hole at the center of the Milky Way. Its presence was inferred from the orbits of stars swinging around an invisible point at extreme speed — work recognized by the 2020 Nobel Prize in Physics. It is not itself a visual object (real telescopes see only the glow of matter swirling around it); this marker stands in for its location.",
-  };
+  const mesh = buildBlackHole(
+    "Sagittarius A*",
+    { Type: "Supermassive black hole", Mass: "~4.1 million M☉", "Distance from Sun": "~26,000 ly" },
+    "The supermassive black hole at the center of the Milky Way. Its presence was inferred from the orbits of stars swinging around an invisible point at extreme speed — work recognized by the 2020 Nobel Prize in Physics. Real telescopes see only the glow of infalling matter swirling around it, not the hole itself — this accretion-disk marker stands in for that glow rather than the (invisible) horizon alone.",
+    40,
+    0.5
+  );
   group.add(mesh);
   group.add(makeGlowSprite(0xffd27a, 260, 0.6));
 

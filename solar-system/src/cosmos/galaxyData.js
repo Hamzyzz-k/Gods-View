@@ -27,6 +27,11 @@ export const GALAXY_DATA = [
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/f/ff/Andromeda_galaxy.jpg",
     meta: { Type: "Spiral galaxy", Distance: "~2.5 million ly", Diameter: "~220,000 ly" },
     info: "The nearest large spiral galaxy to the Milky Way, and the most distant object visible to the naked eye. Andromeda and the Milky Way are approaching each other and are expected to merge in roughly 4-5 billion years.",
+    blackHole: {
+      name: "Andromeda's Nucleus (P2)",
+      meta: { Type: "Supermassive black hole", Mass: "~140 million M☉", Host: "Andromeda Galaxy" },
+      info: "The supermassive black hole at Andromeda's center, embedded in a dense, off-center double nucleus (P1 and P2) — a lopsided structure thought to be a ring of old stars orbiting the black hole eccentrically. At roughly 140 million solar masses, it dwarfs the Milky Way's own Sagittarius A*.",
+    },
   },
   {
     name: "Triangulum Galaxy",
@@ -105,6 +110,11 @@ export const GALAXY_DATA = [
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/e/e5/Centaurus_A.jpg",
     meta: { Type: "Elliptical galaxy", Distance: "~12 million ly" },
     info: "One of the closest active galaxies to Earth, split by a dramatic dark dust lane — the aftermath of a collision with a smaller spiral galaxy. Its core hosts a supermassive black hole launching a jet of particles thousands of light-years long.",
+    blackHole: {
+      name: "Centaurus A's Central Black Hole",
+      meta: { Type: "Supermassive black hole", Mass: "~55 million M☉", Host: "Centaurus A" },
+      info: "The active supermassive black hole powering Centaurus A, one of the closest and brightest radio galaxies to Earth. Matter falling toward it launches a relativistic jet of particles thousands of light-years long — visible across the radio, X-ray, and gamma-ray spectrum.",
+    },
   },
   {
     name: "Virgo Cluster",
@@ -117,6 +127,11 @@ export const GALAXY_DATA = [
     color: 0xd8e4ff,
     meta: { Type: "Galaxy cluster (~1,300+ members)", Distance: "~53.5 million ly" },
     info: "The nearest large galaxy cluster to the Local Group, anchored by the giant elliptical galaxy M87. The Local Group is gravitationally drawn toward the Virgo Cluster as part of the larger Virgo Supercluster.",
+    blackHole: {
+      name: "M87*",
+      meta: { Type: "Supermassive black hole", Mass: "~6.5 billion M☉", Host: "M87, Virgo Cluster" },
+      info: "The first black hole ever directly imaged, by the Event Horizon Telescope in 2019 — the famous glowing orange ring around a dark center. At roughly 6.5 billion solar masses, it anchors the giant elliptical galaxy M87 at the heart of the Virgo Cluster and powers a jet of particles over 5,000 light-years long.",
+    },
   },
   {
     name: "Cartwheel Galaxy",

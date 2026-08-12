@@ -34,7 +34,7 @@ export function showInfoFor(obj) {
         const chips = [
           `Altitude: ${formatNumber(live.altitudeKm)} km`,
           `Speed: ${formatNumber(live.velocityKph)} km/h`,
-          live.visibility ? `Currently: ${live.visibility === "daylight" ? "in sunlight ☀️" : "in Earth's shadow 🌑"}` : null,
+          live.visibility ? `Currently: ${live.visibility === "daylight" ? "in sunlight" : "in Earth's shadow"}` : null,
           `Position: ${live.latitude.toFixed(1)}°, ${live.longitude.toFixed(1)}°`,
         ].filter(Boolean);
         infoMeta.insertAdjacentHTML(

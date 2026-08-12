@@ -47,17 +47,20 @@
       <button id="alignBtn"> Align Planets</button>
     </div>
     <div class="row">
-      <button id="startTourBtn">🚀 Start Tour</button>
+      <button id="startTourBtn">Start Tour</button>
     </div>
     <div class="row">
-      <button id="startCosmicTourBtn">🌌 Cosmic Tour</button>
+      <button id="startCosmicTourBtn">Cosmic Tour</button>
     </div>
     <div class="row">
-      <button id="kioskModeBtn">🖥️ Presentation Mode</button>
+      <button id="kioskModeBtn">Presentation Mode</button>
     </div>
     <div class="row">
-      <button id="tripLogBtn">🧭 Trip Log</button>
-      <button id="quizBtn">🎯 Quiz</button>
+      <button id="tripLogBtn">Trip Log</button>
+      <button id="quizBtn">Quiz</button>
+    </div>
+    <div class="row">
+      <button id="sizeCompareBtn">Compare Sizes</button>
     </div>
     <div id="info">Drag to rotate • Scroll to zoom • Click a planet (or the ISS orbiting Earth!) to zoom in &amp; see info • Double-click a planet to land on its surface</div>
   </div>
@@ -85,13 +88,24 @@
     <button id="tourExitBtn" title="Exit tour">Exit Tour</button>
   </div>
 
-  <button id="ttsToggleBtn" title="Mute narration">🔊</button>
-  <button id="ambientToggleBtn" title="Mute planet ambience">🪐</button>
+  <button id="ttsToggleBtn" title="Mute narration">TTS</button>
+  <button id="ambientToggleBtn" title="Mute planet ambience">AMB</button>
 
   <!-- Shown only while AppState.mode === 'surface' (see surface/desktopSurfaceUI.js).
        Floating top-left, same treatment as ttsToggleBtn/ambientToggleBtn above. -->
   <button id="exitSurfaceBtn" class="hidden">Exit Surface</button>
   <div id="surfaceHint" class="hidden">Click to look around • WASD to walk • Esc to release mouse</div>
+
+  <!-- VR-only plumbing (src/xr/vrSizeComparePanel.js): the desktop size
+       comparison panel is a free-text search with no VR equivalent input,
+       so its VR counterpart is a small preset-cycling panel instead — these
+       three never render on desktop, they exist purely as the real DOM
+       elements xr/controllerRaycast.js's onSelectStart() needs to `.click()`
+       through, the same "DOM is the source of truth for a VR button press"
+       contract every other VR panel in this app already uses. -->
+  <button id="vrSizeToggleBtn" class="hidden"></button>
+  <button id="vrSizePrevBtn" class="hidden"></button>
+  <button id="vrSizeNextBtn" class="hidden"></button>
 
   <div id="eventToast">
     <button id="eventToastClose">&times;</button>
@@ -116,7 +130,7 @@
     <div id="landmarksBackdrop"></div>
     <div id="landmarksCard">
       <button id="landmarksClose">&times;</button>
-      <h3>🌐 Visit a Real Place on Earth</h3>
+      <h3>Visit a Real Place on Earth</h3>
       <div id="landmarksBody">Loading…</div>
       <div class="modal-credit">Real 360° photospheres, sourced from Wikimedia Commons.</div>
     </div>
@@ -126,7 +140,7 @@
     <div id="tripLogBackdrop"></div>
     <div id="tripLogCard">
       <button id="tripLogClose">&times;</button>
-      <h3>🧭 Trip Log</h3>
+      <h3>Trip Log</h3>
       <div id="tripLogBody">Loading…</div>
       <button id="tripLogClearBtn">Clear Log</button>
     </div>
@@ -136,8 +150,23 @@
     <div id="quizBackdrop"></div>
     <div id="quizCard">
       <button id="quizClose">&times;</button>
-      <h3>🎯 Quick Quiz</h3>
+      <h3>Quick Quiz</h3>
       <div id="quizBody">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Search-and-select size comparison (src/ui/sizeComparePanel.js). Picks
+       any 2+ real astronomical bodies from src/data/sizeData.js and plots
+       them on a shared logarithmic scale bar. -->
+  <div id="sizeCompareModal">
+    <div id="sizeCompareBackdrop"></div>
+    <div id="sizeCompareCard">
+      <button id="sizeCompareClose">&times;</button>
+      <h3>Compare Sizes</h3>
+      <input id="sizeCompareSearch" type="text" placeholder="Search Earth, Sun, Andromeda, Sagittarius A*…" autocomplete="off" />
+      <div id="sizeCompareList"></div>
+      <div id="sizeCompareSelected"></div>
+      <div id="sizeCompareBar"></div>
     </div>
   </div>
 
@@ -154,12 +183,12 @@
     <!-- Earth only (src/landmark/desktopLandmarkUI.js) — opens the real
          360° photosphere picker, distinct from the stylized Land on
          Surface above. -->
-    <button id="landmarksBtn" class="hidden">🌐 Visit a Real Place</button>
+    <button id="landmarksBtn" class="hidden">Visit a Real Place</button>
     <button id="infoReset">Back to full view</button>
   </div>
 
   <div id="agentPanel">
-    <h2>🤖 Scene Assistant</h2>
+    <h2>Scene Assistant</h2>
     <div id="agentLog"></div>
     <div id="agentChips">
       <button class="chip" data-cmd="show only the inner planets">Only inner planets</button>
@@ -170,7 +199,7 @@
     </div>
     <form id="agentForm">
       <input id="agentInput" type="text" placeholder="e.g. hide Jupiter, show only outer planets…" autocomplete="off" />
-      <button type="button" id="agentMicBtn" title="Voice input">🎤</button>
+      <button type="button" id="agentMicBtn" title="Voice input">Mic</button>
       <button type="submit">Send</button>
     </form>
   </div>

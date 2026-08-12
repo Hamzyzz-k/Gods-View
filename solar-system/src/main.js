@@ -51,6 +51,11 @@ initTierTransition();
 const { initScaleBreadcrumb } = await import("./ui/scaleBreadcrumb.js");
 initScaleBreadcrumb();
 
+// Cosmic scale ladder (desktop): scrolling out past a tier's zoom limit
+// ascends to the next tier, alongside the breadcrumb's explicit +/- buttons.
+const { initScrollZoomTier } = await import("./cosmos/scrollZoomTier.js");
+initScrollZoomTier();
+
 // Presentation/kiosk mode. Inert until the button is clicked.
 const { initKioskMode } = await import("./ui/kioskMode.js");
 initKioskMode();
@@ -60,6 +65,11 @@ const { initTripLog } = await import("./edu/tripLog.js");
 initTripLog();
 const { initQuiz } = await import("./edu/quiz.js");
 initQuiz();
+
+// Size comparison panel: search/select 2+ bodies, see them on a shared log
+// scale bar. Inert until its button is clicked.
+const { initSizeComparePanel } = await import("./ui/sizeComparePanel.js");
+initSizeComparePanel();
 
 // Earth landmark photospheres (desktop). Inert until Earth is focused and
 // its Visit a Real Place button is clicked.
@@ -111,6 +121,8 @@ const { initVrTourPanel } = await import("./xr/vrTourPanel.js");
 initVrTourPanel();
 const { initVrScalePanel } = await import("./xr/vrScalePanel.js");
 initVrScalePanel();
+const { initVrSizeComparePanel } = await import("./xr/vrSizeComparePanel.js");
+initVrSizeComparePanel();
 const { initControllerRaycast } = await import("./xr/controllerRaycast.js");
 initControllerRaycast();
 

@@ -80,7 +80,7 @@ function renderTripLog() {
     .map((e) => {
       const time = new Date(e.timestamp).toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
       return `<div class="eclipse-row">
-        <div class="eclipse-row-head">🧭 <strong>${e.name}</strong> — ${e.tierLabel}</div>
+        <div class="eclipse-row-head"><strong>${e.name}</strong> — ${e.tierLabel}</div>
         <div class="eclipse-row-body">${time}</div>
       </div>`;
     })

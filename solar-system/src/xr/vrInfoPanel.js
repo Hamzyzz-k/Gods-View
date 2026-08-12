@@ -121,7 +121,7 @@ function redraw() {
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.fillStyle = COLORS.blue;
-    ctx.fillText("🚶 Land on Surface", W / 2, btnY + btnH / 2 + 2);
+    ctx.fillText("Land on Surface", W / 2, btnY + btnH / 2 + 2);
     ctx.textAlign = "left";
     ctx.textBaseline = "alphabetic";
     infoPanelHitRects.push({ domId: "landBtn", x: PADDING, y: btnY, w: W - PADDING * 2, h: btnH });

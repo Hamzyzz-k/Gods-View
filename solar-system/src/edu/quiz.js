@@ -75,7 +75,7 @@ function onAnswer(i) {
     if (idx === current.answer) btn.classList.add("quiz-correct");
     else if (idx === i) btn.classList.add("quiz-wrong");
   });
-  feedback.textContent = correct ? "✅ Correct!" : `❌ Not quite — the answer was "${current.options[current.answer]}".`;
+  feedback.textContent = correct ? "Correct!" : `Not quite — the answer was "${current.options[current.answer]}".`;
   feedback.classList.add(correct ? "quiz-feedback-correct" : "quiz-feedback-wrong");
   const nextBtn = document.createElement("button");
   nextBtn.className = "quiz-next-btn";

@@ -12,9 +12,8 @@ import { getSurfaceData } from "../surface/surfaceData.js";
 import { getTierLadder } from "../cosmos/tierNavigation.js";
 import { ascendTierCinematic, descendTierCinematic, jumpToTierCinematic } from "../cosmos/tierTransition.js";
 import { getTierById } from "../cosmos/tierData.js";
-import { GALAXY_DATA } from "../cosmos/galaxyData.js";
-import { enterLandmark, exitLandmark } from "../landmark/landmarkMode.js";
-import { LANDMARK_DATA } from "../landmark/landmarkData.js";
+import { exitLandmark } from "../landmark/landmarkMode.js";
+import { locateAndShow } from "./entityLocator.js";
 
 // Short, sayable aliases per tier — the real labels (cosmos/tierData.js)
 // are used for replies, but "go to the supercluster" is how someone would
@@ -126,26 +125,17 @@ export function interpretCommand(raw) {
     return "You're not currently on a surface.";
   }
 
-  // Earth landmark photospheres (landmark/landmarkMode.js). This is the only
-  // voice/VR entry point into landmark mode besides the desktop picker
-  // (landmark/desktopLandmarkUI.js) — the one that matters for VR, which has
-  // no #landmarksBtn to click.
-  // Matched against the live roster rather than a hardcoded name list, so
-  // adding a wonder to landmark/landmarkData.js needs no change here.
-  // Requires an explicit visit verb so "tell me about the colosseum" stays a
-  // question rather than teleporting the viewer somewhere.
+  // Any named galaxy, black hole, or Earth landmark, from anywhere — locates
+  // it and takes the user there, jumping tiers (or back to the solar system
+  // for a landmark) first if needed (assistant/entityLocator.js). This is
+  // also the only voice/VR entry point into landmark mode besides the
+  // desktop picker (landmark/desktopLandmarkUI.js), which has no
+  // #landmarksBtn to click. Requires an explicit visit/travel verb so "tell
+  // me about the colosseum" stays a question rather than teleporting the
+  // viewer somewhere.
   if (/\b(?:visit|take me to|go to|show me)\b/.test(text)) {
-    const hit = LANDMARK_DATA.find((l) => {
-      const full = l.name.toLowerCase();
-      const short = full.replace(/^(the )?/, "").replace(/ of china$/, ""); // "great wall", not only "great wall of china"
-      return text.includes(full) || text.includes(short);
-    });
-    if (hit) {
-      const ok = enterLandmark(hit.name);
-      return ok
-        ? `Taking you to ${hit.name}.`
-        : `Can't travel to ${hit.name} from here — head back to the Solar System first.`;
-    }
+    const reply = locateAndShow(text);
+    if (reply) return reply;
   }
   if (/\b(exit|leave) (the )?landmark\b/.test(text)) {
     if (AppState.mode === "landmark") {
@@ -249,38 +239,12 @@ export function interpretCommand(raw) {
       }
     }
 
-    // Galaxies (cosmos/galaxyData.js) and the Milky Way's own core, scoped
-    // to whichever tier is CURRENTLY active — unlike planets (always in the
-    // solar-system tier), a galaxy from a different tier isn't focusable
-    // from here without navigating there first. That's a deliberate scope
-    // boundary, not an oversight: the tier-navigation commands above
-    // ("go to the local group") plus this cover the same ground the Cosmic
-    // Tour already proves works end to end, without this command needing
-    // to duplicate that tour's own cross-tier deferred-focus machinery.
-    if (/\b(sagittarius a\*?|galactic core|the black hole)\b/.test(text) && AppState.tier === "milkyWay") {
-      const core = AppState.activeScene.getObjectByName("Sagittarius A*");
-      if (core) {
-        focusOnObject(core);
-        return "Focusing on Sagittarius A*.";
-      }
-    }
-    // Matches the full name ("andromeda galaxy"), the short form with the
-    // generic "galaxy"/"cluster" suffix dropped ("andromeda" — how anyone
-    // actually says it out loud), or the alt name/acronym ("M31", "LMC").
-    const galaxyMatch = GALAXY_DATA.find((g) => {
-      const full = g.name.toLowerCase();
-      const short = full.replace(/\s+(galaxy|cluster)$/, "");
-      return text.includes(full) || text.includes(short) || (g.altName && text.includes(g.altName.toLowerCase()));
-    });
-    if (galaxyMatch) {
-      const obj = AppState.activeScene.getObjectByName(galaxyMatch.name);
-      if (obj) {
-        focusOnObject(obj);
-        return `Focusing on ${galaxyMatch.name}.`;
-      }
-      const tierLabel = getTierById(galaxyMatch.tier)?.label || galaxyMatch.tier;
-      return `${galaxyMatch.name} is in ${tierLabel} — try "go to ${tierLabel.toLowerCase()}" first, or "start the cosmic tour".`;
-    }
+    // Any named galaxy, black hole, or landmark, from wherever the user
+    // currently is (assistant/entityLocator.js) — jumps tiers first if
+    // needed rather than only working when the right tier already happens
+    // to be active.
+    const reply = locateAndShow(text);
+    if (reply) return reply;
 
     return "I'm not sure which body you mean — try naming one, like \"show me Saturn\" or \"focus on the Sun\".";
   }

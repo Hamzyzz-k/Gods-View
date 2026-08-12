@@ -172,7 +172,7 @@ export const ambientVolume = 0.6; // fixed master level; narration ducks it furt
 export let ambientMuted = localStorage.getItem("ambientMuted") === "true";
 
 export function updateAmbientButton() {
-  ambientToggleBtn.textContent = ambientMuted ? "🌑" : "🪐";
+  ambientToggleBtn.textContent = "AMB";
   ambientToggleBtn.title = ambientMuted ? "Unmute planet ambience" : "Mute planet ambience";
   ambientToggleBtn.classList.toggle("muted", ambientMuted);
 }

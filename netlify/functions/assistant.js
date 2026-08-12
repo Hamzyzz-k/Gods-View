@@ -25,15 +25,26 @@ const TARGETS = [
   "sun", "moon", "moons", "rings", "asteroids", "belt", "iss", "constellations", "galaxies",
 ];
 
-// The cosmic scale ladder's tier ids (cosmos/tierData.js) and the galaxy
-// roster (cosmos/galaxyData.js) — kept in sync by hand, same convention
+// The cosmic scale ladder's tier ids (cosmos/tierData.js), the galaxy
+// roster (cosmos/galaxyData.js), the black holes (Sagittarius A* from
+// cosmos/milkyWay.js, plus each major galaxy's own marker from
+// cosmos/galaxyData.js's `blackHole` field), and the Earth landmarks
+// (landmark/landmarkData.js) — kept in sync by hand, same convention
 // TARGETS above already documents, since this function has no build step
-// to import them from src/ directly.
+// to import them from src/ directly. All four are handled by the single
+// "locate" action below (src/assistant/entityLocator.js) — none of them
+// need their own dedicated action type or tier bookkeeping in this prompt.
 const TIER_IDS = ["solarSystem", "milkyWay", "localGroup", "supercluster", "observableUniverse"];
 const GALAXY_NAMES = [
   "andromeda galaxy", "triangulum galaxy", "large magellanic cloud", "small magellanic cloud",
   "whirlpool galaxy", "sombrero galaxy", "centaurus a", "virgo cluster", "cartwheel galaxy",
-  "bullet cluster", "sagittarius a*",
+  "bullet cluster",
+];
+const BLACKHOLE_NAMES = [
+  "sagittarius a*", "andromeda's nucleus (p2)", "centaurus a's central black hole", "m87*",
+];
+const LANDMARK_NAMES = [
+  "taj mahal", "colosseum", "great wall of china", "petra", "machu picchu", "chichen itza", "christ the redeemer",
 ];
 
 const SYSTEM_INSTRUCTION = `
@@ -61,7 +72,7 @@ Valid action objects:
   {"type":"descendTier"}
   {"type":"jumpToTier","target":"milkyWay"}
   {"type":"startCosmicTour"}
-  {"type":"focusGalaxy","target":"andromeda galaxy"}
+  {"type":"locate","target":"andromeda galaxy"}
 
 Valid targets: ${TARGETS.join(", ")}.
 
@@ -83,18 +94,28 @@ jumpToTier).
   - "start the cosmic tour" -> {"type":"startCosmicTour"} — a single guided
     journey from Earth out through every tier to the observable universe,
     distinct from the planet-only "startTour" above.
-  - Galaxies only exist in ONE specific tier each and are only focusable
-    while that tier is the active one (context.tier) — trying to focus one
-    from elsewhere does nothing useful, so first emit
-    {"type":"jumpToTier","target":"..."} for its tier (or
-    {"type":"startCosmicTour"}), and only emit
-    {"type":"focusGalaxy","target":"andromeda galaxy"} once you know
-    context.tier will already be correct, or explain the mismatch in "reply"
-    instead of emitting a focusGalaxy action that won't do anything.
-    Valid galaxy names: ${GALAXY_NAMES.join(", ")} (all lowercase; "sagittarius
-    a*" is the Milky Way's own central black hole, only in the milkyWay tier).
   - "hide the galaxies"/"show galaxies" (the whole roster, not one by name)
     -> {"type":"hide"/"show","targets":["galaxies"]}, same as any other group.
+
+Locating a specific galaxy, black hole, or Earth landmark by NAME — as
+opposed to a whole scale/tier above, which has no single position to fly
+to. ONE action handles all three kinds and does the tier-jumping (or, for a
+landmark, the return-to-solar-system) itself — you never need to emit a
+separate jumpToTier first:
+  {"type":"locate","target":"andromeda galaxy"}
+Valid galaxy names: ${GALAXY_NAMES.join(", ")}.
+Valid black hole names: ${BLACKHOLE_NAMES.join(", ")} — "sagittarius a*" is
+the Milky Way's own central black hole; the other three are the central
+black hole of the galaxy named in their own name (all real, individually
+directly-imaged-or-not as appropriate — say so if asked).
+Valid landmark names (real 360° photospheres/panoramas of real places on
+Earth, entered from a click inside the "locate" action): ${LANDMARK_NAMES.join(", ")}.
+Use "locate" for ANY of the names above, regardless of which tier or mode
+the user is currently in — e.g. "show me Andromeda" while looking at the
+solar system, or "take me to the Taj Mahal" while out at the observable
+universe tier, both just emit {"type":"locate","target":"..."} with no other
+action needed. If the name doesn't match anything on these three lists,
+don't emit "locate" — say you don't recognize it instead of guessing.
 
 Guided Tour and Surface Mode, a second feature alongside scene visibility:
   - "start the tour"/"begin the tour" -> {"type":"startTour"} (Mercury through
@@ -114,7 +135,8 @@ Guided Tour and Surface Mode, a second feature alongside scene visibility:
     asked to land on one of those, explain why instead of emitting the action.
   - "exit the surface"/"leave the surface"/"back to free-roam"/"back to orbit"
     while context.mode is "surface" -> {"type":"exitSurface"}.
-context.mode ("orbital" or "surface"), context.tourState ("idle", "playing",
+context.mode ("orbital", "surface", or "landmark" — inside one of the Earth
+photospheres/panoramas above), context.tourState ("idle", "playing",
 or "paused"), and context.tier (see the cosmic scale ladder section below)
 tell you the current state — use them to give an accurate confirmation (e.g.
 don't say "starting the tour" if context.mode is already "surface", since
@@ -126,19 +148,24 @@ Phrase shortcuts you must expand yourself:
   "everything"/"all planets" -> all nine planets
 
 "show"/"hide"/"showOnly" only change what's VISIBLE — they never move the
-camera. "focus" is the ONLY action that moves the camera to a body. These are
-easy to conflate because they share the word "show", so route by the user's
-actual intent, not just keyword matching:
+camera. "focus" (planets/sun/iss) and "locate" (galaxies/black holes/
+landmarks, see above) are the only actions that move the camera/take the
+user somewhere. These are easy to conflate with show/hide because they
+share the word "show", so route by the user's actual intent, not just
+keyword matching:
   - Personal/deictic phrasing ("show ME saturn", "take me to saturn", "let's
     see saturn", "zoom in on saturn", "look at saturn", "go to saturn") means
-    the user wants the CAMERA there -> emit {"type":"focus","target":"saturn"}.
+    the user wants the CAMERA there -> emit {"type":"focus","target":"saturn"}
+    for a planet/sun/iss, or {"type":"locate","target":"..."} for a galaxy,
+    black hole, or landmark by name.
   - Impersonal phrasing with no travel intent ("show saturn", "show only the
     inner planets", "hide the asteroid belt") means a pure visibility change
     -> emit {"type":"show"/"hide"/"showOnly",...}, no focus action.
-If your reply text says anything like "focusing on X" or "here's X" or "let's
-look at X", you MUST include the matching {"type":"focus","target":"X"}
-action — never describe a camera move in the reply without actually emitting
-the action that performs it.
+If your reply text says anything like "focusing on X", "taking you to X",
+"here's X", or "let's look at X", you MUST include the matching
+{"type":"focus","target":"X"} or {"type":"locate","target":"X"} action —
+never describe a camera move or a trip somewhere in the reply without
+actually emitting the action that performs it.
 
 If the user asks a question rather than issuing a command, return
 "actions": [] and put a concise 2-4 sentence answer in "reply". When
@@ -164,7 +191,7 @@ const RESPONSE_SCHEMA = {
               "show", "hide", "showOnly", "focus", "orbitLines", "reset",
               "startTour", "nextStop", "prevStop", "pauseTour", "resumeTour", "exitTour", "jumpToPlanet",
               "land", "exitSurface",
-              "ascendTier", "descendTier", "jumpToTier", "startCosmicTour", "focusGalaxy",
+              "ascendTier", "descendTier", "jumpToTier", "startCosmicTour", "locate",
             ],
           },
           targets: { type: "array", items: { type: "string" } },

@@ -39,14 +39,14 @@ export function reportRealTextureStatus() {
     if (settled < requested) return; // more still in flight
     if (loaded === 0) {
       showToast(
-        "⚠️ Real textures unavailable",
+        "Real textures unavailable",
         "Couldn't fetch photo textures from Wikimedia — check your internet connection, or that this page is being served over http(s) rather than opened directly as a local file (module scripts are blocked on file://). Using the built-in procedural textures instead.",
         10000
       );
     } else if (loaded < requested) {
-      showToast("🪐 Real textures partly loaded", `${loaded}/${requested} loaded; the rest fell back to procedural textures.`, 6000);
+      showToast("Real textures partly loaded", `${loaded}/${requested} loaded; the rest fell back to procedural textures.`, 6000);
     } else {
-      showToast("🪐 Real textures loaded", `All ${loaded} NASA-derived textures loaded successfully.`, 5000);
+      showToast("Real textures loaded", `All ${loaded} NASA-derived textures loaded successfully.`, 5000);
     }
   }, 500);
 }

@@ -2,6 +2,7 @@ import { AppState } from "../core/state.js";
 import { sceneRegistry } from "../assistant/sceneRegistry.js";
 import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
 import { registerPanel } from "./controllerRaycast.js";
+import { isVrSizeCompareOpen } from "./vrSizeComparePanel.js";
 
 // ---------- VR control panel ----------
 // The desktop pause/orbit-lines/moons/constellations/mute controls, mirrored
@@ -39,15 +40,16 @@ const HEIGHT_ABOVE_EYES = 0.55; // look-up angle at FORWARD_Z: atan(0.55/2.6) �
 // math for a shape it was never designed for, buttons are square icons now:
 // simpler, always fits, and state is still visible via the highlight color
 // plus the icon itself (e.g. pause swaps to a play glyph).
-const VOICE_BTN = { domId: "ttsToggleBtn", icon: () => document.getElementById("ttsToggleBtn")?.textContent || "🔊", active: () => !document.getElementById("ttsToggleBtn")?.classList.contains("muted") };
-const AMBIENCE_BTN = { domId: "ambientToggleBtn", icon: () => document.getElementById("ambientToggleBtn")?.textContent || "🪐", active: () => !document.getElementById("ambientToggleBtn")?.classList.contains("muted") };
+const VOICE_BTN = { domId: "ttsToggleBtn", icon: () => document.getElementById("ttsToggleBtn")?.textContent || "TTS", active: () => !document.getElementById("ttsToggleBtn")?.classList.contains("muted") };
+const AMBIENCE_BTN = { domId: "ambientToggleBtn", icon: () => document.getElementById("ambientToggleBtn")?.textContent || "AMB", active: () => !document.getElementById("ambientToggleBtn")?.classList.contains("muted") };
 
 const BUTTONS_ORBITAL = [
   { domId: "pauseBtn", icon: () => (document.getElementById("pauseBtn")?.textContent === "Resume" ? "▶" : "⏸") },
-  { domId: "orbitBtn", icon: "🛰", active: () => AppState.orbitLinesVisible },
-  { domId: "moonsBtn", icon: "🌙", active: () => isBtnActive("moonsBtn") },
-  { domId: "constellationBtn", icon: "✨", active: () => isBtnActive("constellationBtn") },
-  { domId: "issBtn", icon: "📡" },
+  { domId: "orbitBtn", icon: "ORBIT", active: () => AppState.orbitLinesVisible },
+  { domId: "moonsBtn", icon: "MOON", active: () => isBtnActive("moonsBtn") },
+  { domId: "constellationBtn", icon: "STARS", active: () => isBtnActive("constellationBtn") },
+  { domId: "issBtn", icon: "ISS" },
+  { domId: "vrSizeToggleBtn", icon: "SIZE", active: () => isVrSizeCompareOpen() },
   VOICE_BTN,
   AMBIENCE_BTN,
 ];
@@ -59,7 +61,7 @@ const BUTTONS_ORBITAL = [
 // uses (surface/desktopSurfaceUI.js). Mute toggles carry over since you'd
 // still want them available while walking around.
 const BUTTONS_SURFACE = [
-  { domId: "exitSurfaceBtn", icon: "🚪" },
+  { domId: "exitSurfaceBtn", icon: "EXIT" },
   VOICE_BTN,
   AMBIENCE_BTN,
 ];
@@ -120,11 +122,14 @@ function drawButton(ctx, x, y, size, btn) {
   ctx.stroke();
 
   const icon = typeof btn.icon === "function" ? btn.icon() : btn.icon;
-  ctx.font = "58px sans-serif";
+  // Plain-text labels (no emoji) need a smaller font than a single glyph to
+  // stay inside the square button — scaled down by label length rather than
+  // a fixed size chosen for one-character icons.
+  ctx.font = icon.length <= 1 ? "58px sans-serif" : icon.length <= 3 ? "34px sans-serif" : "26px sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = isActive ? COLORS.blue : COLORS.text;
-  ctx.fillText(icon, x + size / 2, y + size / 2 + 4); // +4: optical centering, most emoji glyphs sit slightly above their own baseline-middle
+  ctx.fillText(icon, x + size / 2, y + size / 2 + 2, size - 16);
 }
 
 export function redrawControlPanel() {

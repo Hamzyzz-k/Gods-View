@@ -33,13 +33,13 @@ export let ttsMuted = localStorage.getItem("ttsMuted") === "true";
 
 export function updateTtsButton() {
   if (!ttsSupported && !usingElevenLabs) {
-    ttsToggleBtn.textContent = "🔇";
+    ttsToggleBtn.textContent = "TTS";
     ttsToggleBtn.title = "Voice narration isn't supported in this browser";
     ttsToggleBtn.classList.add("muted");
     ttsToggleBtn.disabled = true;
     return;
   }
-  ttsToggleBtn.textContent = ttsMuted ? "🔇" : "🔊";
+  ttsToggleBtn.textContent = "TTS";
   ttsToggleBtn.title = ttsMuted ? "Unmute narration" : "Mute narration";
   ttsToggleBtn.classList.toggle("muted", ttsMuted);
 }
