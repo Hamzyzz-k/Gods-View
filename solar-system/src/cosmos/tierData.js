@@ -3,6 +3,7 @@ import { AppState } from "../core/state.js";
 import { createStarfield } from "../core/starfield.js";
 import { buildMilkyWayContent, buildMilkyWayHomeMarker, buildHomeMarker } from "./milkyWay.js";
 import { buildGalaxiesForTier } from "./galaxyFactory.js";
+import { buildObservableUniverseBackdrop, WEB_RADIUS } from "./cosmicWeb.js";
 
 // ---------- the cosmic scale ladder ----------
 // Ordered innermost (solar system) to outermost. `defaultView` is only used
@@ -87,6 +88,28 @@ export const TIER_DATA = [
       createStarfield(scene);
       scene.add(buildHomeMarker("Local Group (Home)", 0x7ab8ff)); // points back at where the Milky Way/Andromeda/etc. all sit together, one tier in
       scene.add(buildGalaxiesForTier("supercluster", 1000, 6000, 55000000));
+      return scene;
+    },
+  },
+  {
+    id: "observableUniverse",
+    label: "Observable Universe",
+    // The finale tier. dMaxLy 4B gives slight headroom past the Bullet
+    // Cluster's real ~3.8 billion ly distance, the farthest object in the
+    // whole roster (see cosmos/galaxyData.js) — everything here is a
+    // compressed direction/ordering, never literal scale, same as every
+    // other tier.
+    defaultView: { cameraPos: [0, 5000, 9000], target: [0, 0, 0] },
+    cameraNear: 20,
+    cameraFar: WEB_RADIUS * 6,
+    controlsMax: WEB_RADIUS * 2.2,
+    buildScene: () => {
+      const scene = new THREE.Scene();
+      scene.name = "tier:observableUniverse";
+      scene.add(new THREE.AmbientLight(0x445566, 0.6));
+      scene.add(buildObservableUniverseBackdrop()); // CMB shell + cosmic-web filaments
+      scene.add(buildHomeMarker("Local Supercluster (Home)", 0xffd27a));
+      scene.add(buildGalaxiesForTier("observableUniverse", 1500, WEB_RADIUS * 0.9, 4000000000));
       return scene;
     },
   },
