@@ -165,6 +165,17 @@ const _camPos = new THREE.Vector3();
 // discomfort of a head-locked panel — reserved here for the small control
 // bar instead, which needs to be reachable from anywhere.
 export function updateVrInfoPanel() {
+  // World-anchored panels only stay visible for as long as they remain a
+  // child of whatever scene is actually being rendered. initVrInfoPanel()
+  // parents this to AppState.scene once at startup, which is correct only
+  // until the active scene changes (Surface Mode, or a tier change —
+  // cosmos/tierNavigation.js). Self-healing here, rather than every
+  // navigation call site remembering to move it, means this can never drift
+  // out of sync with whatever AppState.activeScene actually is this frame.
+  // Object3D.add() on an already-parented object removes it from its old
+  // parent first, so this is safe and idempotent to run every frame.
+  if (infoVrPanel.mesh.parent !== AppState.activeScene) AppState.activeScene.add(infoVrPanel.mesh);
+
   const target = AppState.focusedTarget;
   const shouldShow = AppState.xrSession && target && infoPanel.classList.contains("visible");
   infoVrPanel.mesh.visible = !!shouldShow;

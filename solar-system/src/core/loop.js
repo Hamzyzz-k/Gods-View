@@ -17,6 +17,7 @@ import { updateSkyObjects } from "../surface/skyObjects.js";
 import { updateWindParticles } from "../surface/windParticles.js";
 import { updateTour } from "../tour/tourMode.js";
 import { updateTourUI } from "../ui/tourControls.js";
+import { getTierById } from "../cosmos/tierData.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
@@ -170,6 +171,13 @@ export function animate() {
   // pattern as updateVrControlPanel/updateVrInfoPanel above.
   updateTour(delta);
   updateTourUI();
+
+  // Cosmic scale ladder. Only the ACTIVE tier's own update runs — the solar
+  // system tier has none here since its orbital sim already runs
+  // unconditionally above regardless of tier (see the render-target comment
+  // at the bottom of this function for why that's deliberate).
+  const activeTier = getTierById(AppState.tier);
+  if (activeTier?.update) activeTier.update(AppState.activeScene, delta);
 
   // OrbitControls is meaningless during an XR session — the headset owns the
   // camera — and sessionManager disables it on session start, but this guard

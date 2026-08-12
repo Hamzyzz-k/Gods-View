@@ -59,4 +59,15 @@ export const AppState = {
   // detour from the tour.
   tourState: "idle",
   tourIndex: -1,
+
+  // ---------- Cosmic scale ladder ----------
+  // An axis ORTHOGONAL to `mode` above, not a third value of it: `mode`
+  // means "how do I move and interact" (fly vs. walk), `tier` means "how
+  // far out am I" (solar system, Milky Way, ...). See cosmos/tierData.js
+  // for the ordered ladder. Tier changes are only permitted while
+  // mode === 'orbital' (see cosmos/tierNavigation.js's canChangeTier()).
+  tier: "solarSystem",
+  // True only during the cinematic dolly between tiers (cosmos/
+  // tierTransition.js) — blocks starting a second transition mid-flight.
+  tierBusy: false,
 };

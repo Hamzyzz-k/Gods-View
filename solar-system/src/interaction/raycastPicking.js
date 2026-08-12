@@ -16,14 +16,28 @@ export const clickableMeshes = [sun, ...planets.map((p) => p.mesh), ...allMoonMe
 
 if (issProxyMesh) clickableMeshes.push(issProxyMesh);
 
-
+// Per-tier pickable sets — desktop raycasting and the VR laser
+// (xr/controllerRaycast.js) both only test the ACTIVE tier's meshes, so
+// clicking through to a body that isn't even in the scene currently on
+// screen (cosmos/tierNavigation.js) is structurally impossible rather than
+// merely unlikely. The solar system's set is exactly the array above;
+// every other tier registers its own via registerTierClickables() as its
+// content is built (see cosmos/galaxyFactory.js).
+const tierClickables = new Map();
+tierClickables.set("solarSystem", clickableMeshes);
+export function registerTierClickables(tierId, meshes) {
+  tierClickables.set(tierId, meshes);
+}
+export function activeClickables() {
+  return tierClickables.get(AppState.tier) || [];
+}
 
 export function onPointerMove(event) {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
   raycaster.setFromCamera(pointer, camera);
-  const intersects = raycaster.intersectObjects(clickableMeshes, false);
+  const intersects = raycaster.intersectObjects(activeClickables(), false);
 
   if (intersects.length > 0) {
     const obj = intersects[0].object;
@@ -44,7 +58,7 @@ export function onPointerMove(event) {
 // focus.js only owns what happens *after* something is picked.
 export function onClick(event) {
   raycaster.setFromCamera(pointer, camera);
-  const intersects = raycaster.intersectObjects(clickableMeshes, false);
+  const intersects = raycaster.intersectObjects(activeClickables(), false);
   if (intersects.length > 0) {
     focusOnObject(intersects[0].object);
   }
@@ -64,9 +78,13 @@ export function onDoubleClick(event) {
   // dedicated Land button on the in-world info panel instead (Phase D) — if
   // a VR session happens to be active on a device that also has a mouse
   // (Quest Link, an emulator with mouse passthrough), this stays out of its way.
-  if (AppState.mode !== "orbital" || AppState.xrSession) return;
+  // Also solar-system-tier only: landing only makes sense on one of the 9
+  // planets, which only exist in that tier's clickable set (cosmos/
+  // tierNavigation.js) — explicit here rather than relying on that set
+  // incidentally being empty at other tiers.
+  if (AppState.mode !== "orbital" || AppState.xrSession || AppState.tier !== "solarSystem") return;
   raycaster.setFromCamera(pointer, camera);
-  const intersects = raycaster.intersectObjects(clickableMeshes, false);
+  const intersects = raycaster.intersectObjects(activeClickables(), false);
   if (intersects.length === 0) return;
   const obj = intersects[0].object;
   if (getSurfaceData(obj.name)) enterSurface(obj.name);

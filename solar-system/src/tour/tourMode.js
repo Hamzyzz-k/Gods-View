@@ -34,9 +34,11 @@ function goToStop(index) {
 // Surface Mode has no orbital bodies to tour between, and entering it already
 // force-ends any active tour (surface/surfaceMode.js) — starting one is
 // symmetrically blocked so the two states can't fight over what the rig
-// should be doing.
+// should be doing. Also solar-system-tier only: this itinerary's stops are
+// all planet meshes, which only exist in that tier (cosmos/tierData.js) —
+// the Cosmic Tour is the cross-tier equivalent, a separate preset.
 export function startTour() {
-  if (AppState.mode !== "orbital") return false;
+  if (AppState.mode !== "orbital" || AppState.tier !== "solarSystem") return false;
   AppState.tourState = "playing";
   goToStop(0);
   return true;

@@ -1,6 +1,6 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
-import { clickableMeshes } from "../interaction/raycastPicking.js";
+import { activeClickables } from "../interaction/raycastPicking.js";
 import { focusOnObject } from "../interaction/focus.js";
 
 // ---------- VR controller laser-pointer picking ----------
@@ -20,16 +20,16 @@ const LASER_MAX_LENGTH = 40; // scene units, when nothing is hit
 
 // A small registry rather than one hardcoded panel: originally just the
 // control panel, now also the info panel's in-world Land button (Phase D),
-// and the VR tour panel (Phase F) joins the same way. Each entry is
+// the VR tour panel (Phase F), and the VR scale panel join the same way.
+// Each entry is
 // { mesh, getHitRects(): [{domId,x,y,w,h}], uvToCanvasPx(uv), afterClick?() }.
-// Populated once at startup via registerPanel(), before the frame loop
-// starts, so raycastTargets below only needs building once, not every frame.
+// Populated once at startup via registerPanel(). Panel meshes are
+// tier-independent (they exist for the life of the app), so they aren't
+// rebuilt per frame the way the clickable body set below is.
 const registeredPanels = [];
-const raycastTargets = [...clickableMeshes];
 
 export function registerPanel(panel) {
   registeredPanels.push(panel);
-  raycastTargets.push(panel.mesh);
 }
 
 function panelFor(mesh) {
@@ -63,7 +63,7 @@ function findHitButton(panel, uv) {
   return panel.getHitRects().find((r) => x >= r.x && x <= r.x + r.w && y >= r.y && y <= r.y + r.h) || null;
 }
 
-function updateController(controller) {
+function updateController(controller, raycastTargets) {
   const laser = controller.userData.laser;
   controller.getWorldPosition(_origin);
   _direction.set(0, 0, -1).transformDirection(controller.matrixWorld);
@@ -126,9 +126,14 @@ export function initControllerRaycast() {
   });
 }
 
-// Called once per frame, only while a session is active.
+// Called once per frame, only while a session is active. Rebuilt every
+// frame rather than captured once at module eval: the active tier's
+// clickable set changes on tier navigation (cosmos/tierNavigation.js), and
+// a stale copy would keep laser-picking bodies that aren't even in the
+// scene currently on screen.
 export function updateControllerRaycast() {
   const { renderer } = AppState;
-  updateController(renderer.xr.getController(0));
-  updateController(renderer.xr.getController(1));
+  const raycastTargets = [...activeClickables(), ...registeredPanels.map((p) => p.mesh)];
+  updateController(renderer.xr.getController(0), raycastTargets);
+  updateController(renderer.xr.getController(1), raycastTargets);
 }
