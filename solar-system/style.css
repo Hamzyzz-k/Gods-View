@@ -44,7 +44,9 @@ body.kiosk #surfaceHint,
 body.kiosk #eventToast,
 body.kiosk #eclipseCalModal,
 body.kiosk #infoPanel,
-body.kiosk #agentPanel {
+body.kiosk #agentPanel,
+body.kiosk #tripLogModal,
+body.kiosk #quizModal {
   display: none !important;
 }
 
@@ -864,4 +866,190 @@ body.kiosk #kioskExitHint {
   font-size: 12px;
   line-height: 1.5;
   opacity: 0.8;
+}
+
+/* ---------- trip log modal (edu/tripLog.js) — same shape as the eclipse
+   calendar modal above, .eclipse-row/-head/-body reused directly for its
+   entries ---------- */
+#tripLogModal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#tripLogModal.visible {
+  display: flex;
+}
+#tripLogBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+#tripLogCard {
+  position: relative;
+  z-index: 1;
+  width: min(480px, 90vw);
+  max-height: 82vh;
+  overflow-y: auto;
+  background: rgba(14, 16, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 20px 22px;
+  color: #e8ecf7;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+}
+#tripLogCard h3 {
+  font-size: 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(90deg, #ffd27a, #7ab8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+#tripLogClose {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #e8ecf7;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+#tripLogClose:hover {
+  opacity: 1;
+}
+#tripLogClearBtn {
+  margin-top: 8px;
+  width: 100%;
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e8ecf7;
+  border-radius: 8px;
+  padding: 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+#tripLogClearBtn:hover {
+  background: rgba(255,255,255,0.18);
+}
+
+/* ---------- quiz modal (edu/quiz.js) ---------- */
+#quizModal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#quizModal.visible {
+  display: flex;
+}
+#quizBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+#quizCard {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 90vw);
+  background: rgba(14, 16, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 20px 22px;
+  color: #e8ecf7;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+}
+#quizCard h3 {
+  font-size: 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(90deg, #ffd27a, #7ab8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+#quizClose {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #e8ecf7;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+#quizClose:hover {
+  opacity: 1;
+}
+.quiz-score {
+  font-size: 11px;
+  opacity: 0.6;
+  margin-bottom: 10px;
+}
+.quiz-question {
+  font-size: 14px;
+  margin-bottom: 14px;
+  line-height: 1.4;
+}
+.quiz-options {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.quiz-option {
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.18);
+  color: #e8ecf7;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+.quiz-option:hover:not(:disabled) {
+  background: rgba(255,255,255,0.18);
+}
+.quiz-option:disabled {
+  cursor: default;
+}
+.quiz-option.quiz-correct {
+  background: rgba(122,255,180,0.18);
+  border-color: rgba(122,255,180,0.5);
+}
+.quiz-option.quiz-wrong {
+  background: rgba(255,107,107,0.18);
+  border-color: rgba(255,107,107,0.5);
+}
+.quiz-feedback {
+  margin-top: 12px;
+  font-size: 13px;
+  min-height: 18px;
+}
+.quiz-feedback-correct {
+  color: #7affb4;
+}
+.quiz-feedback-wrong {
+  color: #ff8f8f;
+}
+.quiz-next-btn {
+  margin-top: 12px;
+  width: 100%;
+  background: linear-gradient(90deg, #7ab8ff, #ffd27a);
+  color: #0b0d18;
+  font-weight: 600;
+  border: none;
+  border-radius: 8px;
+  padding: 9px;
+  font-size: 13px;
+  cursor: pointer;
 }

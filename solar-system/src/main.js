@@ -55,6 +55,12 @@ initScaleBreadcrumb();
 const { initKioskMode } = await import("./ui/kioskMode.js");
 initKioskMode();
 
+// Trip log + quiz. Both inert until their buttons are clicked.
+const { initTripLog } = await import("./edu/tripLog.js");
+initTripLog();
+const { initQuiz } = await import("./edu/quiz.js");
+initQuiz();
+
 // Data feeds
 await import("./data/spaceNews.js");
 

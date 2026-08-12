@@ -55,6 +55,10 @@
     <div class="row">
       <button id="kioskModeBtn">🖥️ Presentation Mode</button>
     </div>
+    <div class="row">
+      <button id="tripLogBtn">🧭 Trip Log</button>
+      <button id="quizBtn">🎯 Quiz</button>
+    </div>
     <div id="info">Drag to rotate • Scroll to zoom • Click a planet (or the ISS orbiting Earth!) to zoom in &amp; see info • Double-click a planet to land on its surface</div>
   </div>
 
@@ -102,6 +106,25 @@
       <h3> Upcoming Real Eclipses</h3>
       <div id="eclipseCalBody">Loading…</div>
       <div class="modal-credit">Source: NASA / USNO eclipse predictions — a static, hand-curated list (accurate through early 2028), not a live feed.</div>
+    </div>
+  </div>
+
+  <div id="tripLogModal">
+    <div id="tripLogBackdrop"></div>
+    <div id="tripLogCard">
+      <button id="tripLogClose">&times;</button>
+      <h3>🧭 Trip Log</h3>
+      <div id="tripLogBody">Loading…</div>
+      <button id="tripLogClearBtn">Clear Log</button>
+    </div>
+  </div>
+
+  <div id="quizModal">
+    <div id="quizBackdrop"></div>
+    <div id="quizCard">
+      <button id="quizClose">&times;</button>
+      <h3>🎯 Quick Quiz</h3>
+      <div id="quizBody">Loading…</div>
     </div>
   </div>
 
