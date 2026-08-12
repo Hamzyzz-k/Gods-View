@@ -13,6 +13,8 @@ import { getTierLadder } from "../cosmos/tierNavigation.js";
 import { ascendTierCinematic, descendTierCinematic, jumpToTierCinematic } from "../cosmos/tierTransition.js";
 import { getTierById } from "../cosmos/tierData.js";
 import { GALAXY_DATA } from "../cosmos/galaxyData.js";
+import { enterLandmark, exitLandmark } from "../landmark/landmarkMode.js";
+import { LANDMARK_DATA } from "../landmark/landmarkData.js";
 
 // Short, sayable aliases per tier — the real labels (cosmos/tierData.js)
 // are used for replies, but "go to the supercluster" is how someone would
@@ -122,6 +124,26 @@ export function interpretCommand(raw) {
       return "Leaving the surface, back to free-roam.";
     }
     return "You're not currently on a surface.";
+  }
+
+  // Earth landmark photospheres (landmark/landmarkMode.js). This is the only
+  // voice/VR entry point into landmark mode besides the desktop picker
+  // (landmark/desktopLandmarkUI.js) — the one that matters for VR, which has
+  // no #landmarksBtn to click.
+  const visitMatch = text.match(/\b(?:visit|go to|show me)\s+(?:the\s+)?(taj mahal|alte nationalgalerie)\b/);
+  if (visitMatch) {
+    const name = LANDMARK_DATA.find((l) => l.name.toLowerCase() === visitMatch[1])?.name;
+    if (name) {
+      enterLandmark(name);
+      return `Taking you to the ${name}.`;
+    }
+  }
+  if (/\b(exit|leave) (the )?landmark\b/.test(text)) {
+    if (AppState.mode === "landmark") {
+      exitLandmark();
+      return "Leaving the landmark, back to free-roam.";
+    }
+    return "You're not currently visiting a landmark.";
   }
 
   // Cosmic scale-ladder navigation (cosmos/tierTransition.js). Checked

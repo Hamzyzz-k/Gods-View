@@ -33,7 +33,13 @@ export function addLocomotionHooks({ onEnter, onExit }) {
 export function enterSurface(planetName) {
   const cfg = getSurfaceData(planetName);
   if (!cfg) return false; // not a landable body (e.g. the Sun) — caller should not have offered this
-  if (AppState.mode === "surface") return false; // already on a surface; land()ing again is a no-op, not a re-entry
+  // A positive allowlist (only "orbital" may enter), not `=== "surface"`:
+  // that negative form would let entry through from ANY future third mode
+  // value (e.g. landmark/landmarkMode.js's own "landmark" — the exact same
+  // desync class the tier comment below already guards against) as long as
+  // it merely wasn't literally "surface". Landing genuinely only makes
+  // sense starting from free-flight.
+  if (AppState.mode !== "orbital") return false;
   // Blocked mid-cosmic-tier-transition (cosmos/tierTransition.js): its dolly
   // is actively driving camera.position and will reparent the rig again at
   // its own swap point regardless of what just happened here — landing

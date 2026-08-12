@@ -61,6 +61,11 @@ initTripLog();
 const { initQuiz } = await import("./edu/quiz.js");
 initQuiz();
 
+// Earth landmark photospheres (desktop). Inert until Earth is focused and
+// its Visit a Real Place button is clicked.
+const { initDesktopLandmarkUI } = await import("./landmark/desktopLandmarkUI.js");
+initDesktopLandmarkUI();
+
 // Data feeds
 await import("./data/spaceNews.js");
 

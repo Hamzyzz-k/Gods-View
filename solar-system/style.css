@@ -46,7 +46,9 @@ body.kiosk #eclipseCalModal,
 body.kiosk #infoPanel,
 body.kiosk #agentPanel,
 body.kiosk #tripLogModal,
-body.kiosk #quizModal {
+body.kiosk #quizModal,
+body.kiosk #landmarksModal,
+body.kiosk #exitLandmarkBtn {
   display: none !important;
 }
 
@@ -405,6 +407,30 @@ body.kiosk #kioskExitHint {
 }
 
 #exitSurfaceBtn:hover {
+  background: rgba(255,255,255,0.18);
+  transform: scale(1.03);
+}
+
+/* Same treatment as #exitSurfaceBtn — never shown at the same time, since
+   AppState.mode is exclusively 'orbital'/'surface'/'landmark'. */
+#exitLandmarkBtn {
+  position: fixed;
+  top: 44px;
+  left: 16px;
+  z-index: 30;
+  background: rgba(10, 12, 24, 0.65);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e8ecf7;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 9px 16px;
+  border-radius: 20px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+#exitLandmarkBtn:hover {
   background: rgba(255,255,255,0.18);
   transform: scale(1.03);
 }
@@ -937,6 +963,82 @@ body.kiosk #kioskExitHint {
 }
 #tripLogClearBtn:hover {
   background: rgba(255,255,255,0.18);
+}
+
+/* ---------- landmark picker modal (landmark/desktopLandmarkUI.js) — same
+   shape as the trip log / eclipse calendar modals ---------- */
+#landmarksModal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#landmarksModal.visible {
+  display: flex;
+}
+#landmarksBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+#landmarksCard {
+  position: relative;
+  z-index: 1;
+  width: min(480px, 90vw);
+  max-height: 82vh;
+  overflow-y: auto;
+  background: rgba(14, 16, 28, 0.92);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 20px 22px;
+  color: #e8ecf7;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+}
+#landmarksCard h3 {
+  font-size: 16px;
+  margin-bottom: 14px;
+  background: linear-gradient(90deg, #ffd27a, #7ab8ff);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+#landmarksClose {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #e8ecf7;
+  font-size: 20px;
+  cursor: pointer;
+  opacity: 0.6;
+  line-height: 1;
+}
+#landmarksClose:hover {
+  opacity: 1;
+}
+.landmark-row {
+  background: rgba(255,255,255,0.05);
+  border-left: 3px solid rgba(122, 184, 255, 0.4);
+  border-radius: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+.landmark-row:hover {
+  background: rgba(255,255,255,0.1);
+}
+.landmark-row-head {
+  font-size: 13px;
+  margin-bottom: 4px;
+}
+.landmark-row-body {
+  font-size: 12px;
+  line-height: 1.5;
+  opacity: 0.8;
 }
 
 /* ---------- quiz modal (edu/quiz.js) ---------- */

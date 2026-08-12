@@ -23,6 +23,7 @@ import { updateTierTransition } from "../cosmos/tierTransition.js";
 import { updateScaleBreadcrumb } from "../ui/scaleBreadcrumb.js";
 import { updateKioskMode } from "../ui/kioskMode.js";
 import { updateTripLog } from "../edu/tripLog.js";
+import { updateLandmarkUI } from "../landmark/desktopLandmarkUI.js";
 import {
   checkPlanetAlignments, checkEclipse, easeInOutCubic,
   ECLIPSE_MOON_COLOR, lunarEclipseActive,
@@ -193,6 +194,7 @@ export function animate() {
   updateScaleBreadcrumb();
   updateKioskMode();
   updateTripLog();
+  updateLandmarkUI();
 
   // OrbitControls is meaningless during an XR session — the headset owns the
   // camera — and sessionManager disables it on session start, but this guard

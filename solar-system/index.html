@@ -109,6 +109,19 @@
     </div>
   </div>
 
+  <!-- Shown only while AppState.mode === 'landmark' (src/landmark/desktopLandmarkUI.js). -->
+  <button id="exitLandmarkBtn" class="hidden">Exit Landmark</button>
+
+  <div id="landmarksModal">
+    <div id="landmarksBackdrop"></div>
+    <div id="landmarksCard">
+      <button id="landmarksClose">&times;</button>
+      <h3>🌐 Visit a Real Place on Earth</h3>
+      <div id="landmarksBody">Loading…</div>
+      <div class="modal-credit">Real 360° photospheres, sourced from Wikimedia Commons.</div>
+    </div>
+  </div>
+
   <div id="tripLogModal">
     <div id="tripLogBackdrop"></div>
     <div id="tripLogCard">
@@ -138,6 +151,10 @@
          shown for the 9 landable planets (surface/surfaceData.js), hidden
          for the Sun, moons, and the ISS, which have no surface scene. -->
     <button id="landBtn" class="hidden">Land on Surface</button>
+    <!-- Earth only (src/landmark/desktopLandmarkUI.js) — opens the real
+         360° photosphere picker, distinct from the stylized Land on
+         Surface above. -->
+    <button id="landmarksBtn" class="hidden">🌐 Visit a Real Place</button>
     <button id="infoReset">Back to full view</button>
   </div>
 
