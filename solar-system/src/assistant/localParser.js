@@ -130,12 +130,21 @@ export function interpretCommand(raw) {
   // voice/VR entry point into landmark mode besides the desktop picker
   // (landmark/desktopLandmarkUI.js) — the one that matters for VR, which has
   // no #landmarksBtn to click.
-  const visitMatch = text.match(/\b(?:visit|go to|show me)\s+(?:the\s+)?(taj mahal|alte nationalgalerie)\b/);
-  if (visitMatch) {
-    const name = LANDMARK_DATA.find((l) => l.name.toLowerCase() === visitMatch[1])?.name;
-    if (name) {
-      enterLandmark(name);
-      return `Taking you to the ${name}.`;
+  // Matched against the live roster rather than a hardcoded name list, so
+  // adding a wonder to landmark/landmarkData.js needs no change here.
+  // Requires an explicit visit verb so "tell me about the colosseum" stays a
+  // question rather than teleporting the viewer somewhere.
+  if (/\b(?:visit|take me to|go to|show me)\b/.test(text)) {
+    const hit = LANDMARK_DATA.find((l) => {
+      const full = l.name.toLowerCase();
+      const short = full.replace(/^(the )?/, "").replace(/ of china$/, ""); // "great wall", not only "great wall of china"
+      return text.includes(full) || text.includes(short);
+    });
+    if (hit) {
+      const ok = enterLandmark(hit.name);
+      return ok
+        ? `Taking you to ${hit.name}.`
+        : `Can't travel to ${hit.name} from here — head back to the Solar System first.`;
     }
   }
   if (/\b(exit|leave) (the )?landmark\b/.test(text)) {

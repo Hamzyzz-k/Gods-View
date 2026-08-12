@@ -14,8 +14,8 @@ function renderLandmarkList() {
   body.innerHTML = getLandmarkList()
     .map(
       (l) => `<div class="landmark-row" data-name="${l.name}">
-        <div class="landmark-row-head">🌐 <strong>${l.name}</strong></div>
-        <div class="landmark-row-body">${l.location}</div>
+        <div class="landmark-row-head"><strong>${l.name}</strong></div>
+        <div class="landmark-row-body">${l.location} — ${l.mode === "sphere" ? "360&deg; photosphere" : "panoramic view"}</div>
       </div>`
     )
     .join("");
