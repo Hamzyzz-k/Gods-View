@@ -9,6 +9,21 @@ import { AppState } from "../core/state.js";
 import { startTour, nextStop, prevStop, pauseTour, resumeTour, exitTour, jumpToPlanet } from "../tour/tourMode.js";
 import { enterSurface, exitSurface } from "../surface/surfaceMode.js";
 import { getSurfaceData } from "../surface/surfaceData.js";
+import { getTierLadder } from "../cosmos/tierNavigation.js";
+import { ascendTierCinematic, descendTierCinematic, jumpToTierCinematic } from "../cosmos/tierTransition.js";
+import { getTierById } from "../cosmos/tierData.js";
+import { GALAXY_DATA } from "../cosmos/galaxyData.js";
+
+// Short, sayable aliases per tier — the real labels (cosmos/tierData.js)
+// are used for replies, but "go to the supercluster" is how someone would
+// actually phrase it, not "go to the Local Supercluster".
+const TIER_ALIASES = {
+  solarSystem: ["solar system", "home"],
+  milkyWay: ["milky way"],
+  localGroup: ["local group"],
+  supercluster: ["supercluster", "local supercluster"],
+  observableUniverse: ["observable universe", "the universe", "edge of the universe"],
+};
 
 // Resolve every recognizable target mentioned in the text (planets, sun, moon, rings, groups).
 export function extractTargets(text) {
@@ -31,6 +46,7 @@ export function extractTargets(text) {
   if (/\bbelt\b/.test(text)) found.add("belt");
   if (/\biss\b|\bspace station\b/.test(text)) found.add("iss");
   if (/\bconstellations?\b/.test(text)) found.add("constellations");
+  if (/\bgalax(?:y|ies)\b/.test(text)) found.add("galaxies");
   if (/\binner planets?\b/.test(text)) INNER_PLANETS.forEach((n) => found.add(n));
   if (/\bouter planets?\b/.test(text)) OUTER_PLANETS.forEach((n) => found.add(n));
   if (/\ball planets?\b|\beverything\b|\ball\b/.test(text)) PLANET_NAMES.forEach((n) => found.add(n));
@@ -108,6 +124,38 @@ export function interpretCommand(raw) {
     return "You're not currently on a surface.";
   }
 
+  // Cosmic scale-ladder navigation (cosmos/tierTransition.js). Checked
+  // before the generic focus-intent block below, since "show me the milky
+  // way" should navigate there, not fall through to "I'm not sure which
+  // body you mean" (the milky way has no single focusable mesh the way a
+  // planet does — it's a whole tier, not a body within one).
+  if (/^(start|begin) (the )?cosmic tour\b/.test(text)) {
+    const started = startTour("cosmic");
+    return started
+      ? "Starting the Cosmic Tour — Earth first, all the way out to the observable universe."
+      : "Can't start the tour from the surface — exit back to free-roam first.";
+  }
+  if (/\bzoom out\b|\b(go|zoom|move|pull back)\s+(?:further |farther )?out\b/.test(text)) {
+    const ok = ascendTierCinematic();
+    return ok ? "Zooming out." : "Already at the outermost scale, or busy with another transition.";
+  }
+  if (/\bzoom in\b|\b(go|zoom|move)\s+(?:further |farther )?in\b/.test(text)) {
+    const ok = descendTierCinematic();
+    return ok ? "Zooming in." : "Already at the innermost scale, or busy with another transition.";
+  }
+  if (/\b(go home|go back home)\b/.test(text) || (/\bback to\b/.test(text) && /\bsolar system\b/.test(text))) {
+    const ok = jumpToTierCinematic("solarSystem");
+    return ok ? "Heading back to the Solar System." : "Already there, or busy with another transition.";
+  }
+  if (/\b(go to|take me to|show me|jump to|navigate to)\b/.test(text)) {
+    const matchedTierId = Object.entries(TIER_ALIASES).find(([, aliases]) => aliases.some((a) => text.includes(a)))?.[0];
+    if (matchedTierId) {
+      const label = getTierById(matchedTierId)?.label || matchedTierId;
+      const ok = jumpToTierCinematic(matchedTierId);
+      return ok ? `Heading to ${label}.` : `Already at ${label}, or busy with another transition.`;
+    }
+  }
+
   // Informational questions ("tell me about Saturn", "what is this?") — answered
   // from local planet data so this works even with no backend configured.
   const questionMatch = text.match(
@@ -126,6 +174,14 @@ export function interpretCommand(raw) {
     if (info) {
       lastReplyWasAnswer = true;
       return ASSISTANT_ENDPOINT ? info.info : `${info.info} (Connect the AI assistant for open-ended astronomy questions beyond the planets.)`;
+    }
+    // A focused galaxy (or the Milky Way's own core) isn't in the
+    // planets/sun/iss data above, but already carries the exact same
+    // {name, meta, info} shape (cosmos/galaxyFactory.js, cosmos/milkyWay.js)
+    // — reused directly here instead of a second lookup table.
+    if ((word === "this" || word === "it") && AppState.focusedTarget?.userData?.info?.info) {
+      lastReplyWasAnswer = true;
+      return AppState.focusedTarget.userData.info.info;
     }
   }
 
@@ -161,6 +217,40 @@ export function interpretCommand(raw) {
         return `Focusing on ${mesh.name}.`;
       }
     }
+
+    // Galaxies (cosmos/galaxyData.js) and the Milky Way's own core, scoped
+    // to whichever tier is CURRENTLY active — unlike planets (always in the
+    // solar-system tier), a galaxy from a different tier isn't focusable
+    // from here without navigating there first. That's a deliberate scope
+    // boundary, not an oversight: the tier-navigation commands above
+    // ("go to the local group") plus this cover the same ground the Cosmic
+    // Tour already proves works end to end, without this command needing
+    // to duplicate that tour's own cross-tier deferred-focus machinery.
+    if (/\b(sagittarius a\*?|galactic core|the black hole)\b/.test(text) && AppState.tier === "milkyWay") {
+      const core = AppState.activeScene.getObjectByName("Sagittarius A*");
+      if (core) {
+        focusOnObject(core);
+        return "Focusing on Sagittarius A*.";
+      }
+    }
+    // Matches the full name ("andromeda galaxy"), the short form with the
+    // generic "galaxy"/"cluster" suffix dropped ("andromeda" — how anyone
+    // actually says it out loud), or the alt name/acronym ("M31", "LMC").
+    const galaxyMatch = GALAXY_DATA.find((g) => {
+      const full = g.name.toLowerCase();
+      const short = full.replace(/\s+(galaxy|cluster)$/, "");
+      return text.includes(full) || text.includes(short) || (g.altName && text.includes(g.altName.toLowerCase()));
+    });
+    if (galaxyMatch) {
+      const obj = AppState.activeScene.getObjectByName(galaxyMatch.name);
+      if (obj) {
+        focusOnObject(obj);
+        return `Focusing on ${galaxyMatch.name}.`;
+      }
+      const tierLabel = getTierById(galaxyMatch.tier)?.label || galaxyMatch.tier;
+      return `${galaxyMatch.name} is in ${tierLabel} — try "go to ${tierLabel.toLowerCase()}" first, or "start the cosmic tour".`;
+    }
+
     return "I'm not sure which body you mean — try naming one, like \"show me Saturn\" or \"focus on the Sun\".";
   }
 

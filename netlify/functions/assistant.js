@@ -2,7 +2,8 @@
 //
 // Replaces the old n8n webhook. The client contract is unchanged:
 //   request : { command, context }  where context =
-//             { visible, hidden, orbitLinesVisible, focused, focusedFacts }
+//             { visible, hidden, orbitLinesVisible, focused, focusedFacts,
+//               mode, tourState, tier }
 //   response: { reply: string, actions: [...] }
 //
 // The GEMINI_API_KEY is read from the environment and never reaches the
@@ -21,7 +22,18 @@ const MODEL = "gemini-3.6-flash";
 const TARGETS = [
   "mercury", "venus", "earth", "mars", "jupiter", "saturn",
   "uranus", "neptune", "pluto",
-  "sun", "moon", "moons", "rings", "asteroids", "belt", "iss", "constellations",
+  "sun", "moon", "moons", "rings", "asteroids", "belt", "iss", "constellations", "galaxies",
+];
+
+// The cosmic scale ladder's tier ids (cosmos/tierData.js) and the galaxy
+// roster (cosmos/galaxyData.js) — kept in sync by hand, same convention
+// TARGETS above already documents, since this function has no build step
+// to import them from src/ directly.
+const TIER_IDS = ["solarSystem", "milkyWay", "localGroup", "supercluster", "observableUniverse"];
+const GALAXY_NAMES = [
+  "andromeda galaxy", "triangulum galaxy", "large magellanic cloud", "small magellanic cloud",
+  "whirlpool galaxy", "sombrero galaxy", "centaurus a", "virgo cluster", "cartwheel galaxy",
+  "bullet cluster", "sagittarius a*",
 ];
 
 const SYSTEM_INSTRUCTION = `
@@ -45,8 +57,44 @@ Valid action objects:
   {"type":"jumpToPlanet","target":"saturn"}
   {"type":"land","target":"mars"}
   {"type":"exitSurface"}
+  {"type":"ascendTier"}
+  {"type":"descendTier"}
+  {"type":"jumpToTier","target":"milkyWay"}
+  {"type":"startCosmicTour"}
+  {"type":"focusGalaxy","target":"andromeda galaxy"}
 
 Valid targets: ${TARGETS.join(", ")}.
+
+Cosmic scale ladder, a third feature alongside scene visibility and Guided
+Tour/Surface Mode. The app has FIVE nested scales, innermost to outermost:
+solarSystem -> milkyWay -> localGroup -> supercluster -> observableUniverse
+(context.tier tells you which one is currently active — these exact
+strings, case-sensitive, are the only valid "target" values for
+jumpToTier).
+  - "zoom out"/"pull back"/"go further out" -> {"type":"ascendTier"}.
+    "zoom in"/"go further in" -> {"type":"descendTier"}. Both refuse
+    silently at either end of the ladder or mid-transition — say so if the
+    reply implies nothing happened.
+  - "go to the milky way"/"take me to the local group"/"show me the
+    observable universe" (naming a SCALE, not a body within one) ->
+    {"type":"jumpToTier","target":"milkyWay"} (etc. — use the exact tier id).
+    "go home"/"back to the solar system" -> {"type":"jumpToTier",
+    "target":"solarSystem"}.
+  - "start the cosmic tour" -> {"type":"startCosmicTour"} — a single guided
+    journey from Earth out through every tier to the observable universe,
+    distinct from the planet-only "startTour" above.
+  - Galaxies only exist in ONE specific tier each and are only focusable
+    while that tier is the active one (context.tier) — trying to focus one
+    from elsewhere does nothing useful, so first emit
+    {"type":"jumpToTier","target":"..."} for its tier (or
+    {"type":"startCosmicTour"}), and only emit
+    {"type":"focusGalaxy","target":"andromeda galaxy"} once you know
+    context.tier will already be correct, or explain the mismatch in "reply"
+    instead of emitting a focusGalaxy action that won't do anything.
+    Valid galaxy names: ${GALAXY_NAMES.join(", ")} (all lowercase; "sagittarius
+    a*" is the Milky Way's own central black hole, only in the milkyWay tier).
+  - "hide the galaxies"/"show galaxies" (the whole roster, not one by name)
+    -> {"type":"hide"/"show","targets":["galaxies"]}, same as any other group.
 
 Guided Tour and Surface Mode, a second feature alongside scene visibility:
   - "start the tour"/"begin the tour" -> {"type":"startTour"} (Mercury through
@@ -66,10 +114,11 @@ Guided Tour and Surface Mode, a second feature alongside scene visibility:
     asked to land on one of those, explain why instead of emitting the action.
   - "exit the surface"/"leave the surface"/"back to free-roam"/"back to orbit"
     while context.mode is "surface" -> {"type":"exitSurface"}.
-context.mode ("orbital" or "surface") and context.tourState ("idle",
-"playing", or "paused") tell you the current state — use them to give an
-accurate confirmation (e.g. don't say "starting the tour" if context.mode is
-already "surface", since startTour will be a no-op there).
+context.mode ("orbital" or "surface"), context.tourState ("idle", "playing",
+or "paused"), and context.tier (see the cosmic scale ladder section below)
+tell you the current state — use them to give an accurate confirmation (e.g.
+don't say "starting the tour" if context.mode is already "surface", since
+startTour will be a no-op there).
 
 Phrase shortcuts you must expand yourself:
   "inner planets" -> mercury, venus, earth, mars
@@ -115,6 +164,7 @@ const RESPONSE_SCHEMA = {
               "show", "hide", "showOnly", "focus", "orbitLines", "reset",
               "startTour", "nextStop", "prevStop", "pauseTour", "resumeTour", "exitTour", "jumpToPlanet",
               "land", "exitSurface",
+              "ascendTier", "descendTier", "jumpToTier", "startCosmicTour", "focusGalaxy",
             ],
           },
           targets: { type: "array", items: { type: "string" } },

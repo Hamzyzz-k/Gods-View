@@ -11,6 +11,8 @@ import { speak } from "../voice/tts.js";
 import { startTour, nextStop, prevStop, pauseTour, resumeTour, exitTour, jumpToPlanet } from "../tour/tourMode.js";
 import { enterSurface, exitSurface } from "../surface/surfaceMode.js";
 import { getSurfaceData } from "../surface/surfaceData.js";
+import { ascendTierCinematic, descendTierCinematic, jumpToTierCinematic } from "../cosmos/tierTransition.js";
+import { GALAXY_DATA } from "../cosmos/galaxyData.js";
 
 // ---------- LLM agent via the Gemini-backed Netlify Function ----------
 
@@ -33,6 +35,7 @@ export async function getSceneContext() {
     focusedFacts,
     mode: AppState.mode,
     tourState: AppState.tourState,
+    tier: AppState.tier,
   };
 }
 
@@ -113,6 +116,33 @@ export function applyActions(actions) {
       case "exitSurface":
         exitSurface();
         break;
+      // Cosmic scale-ladder actions. Same delegation pattern as the tour
+      // actions above — cosmos/tierTransition.js's own guards (blocked
+      // mid-transition, blocked outside the orbital mode, blocked past
+      // either end of the ladder) are the single source of truth.
+      case "ascendTier":
+        ascendTierCinematic();
+        break;
+      case "descendTier":
+        descendTierCinematic();
+        break;
+      case "jumpToTier":
+        jumpToTierCinematic(action.target || "");
+        break;
+      case "startCosmicTour":
+        startTour("cosmic");
+        break;
+      case "focusGalaxy": {
+        const name = (action.target || "").toLowerCase();
+        const entry = GALAXY_DATA.find((g) => g.name.toLowerCase() === name || g.altName?.toLowerCase() === name);
+        // Scoped to the currently active tier, same boundary
+        // assistant/localParser.js's local-parser path applies — a galaxy
+        // from a different tier isn't focusable without navigating there
+        // first (see jumpToTier above, or startCosmicTour).
+        const obj = entry ? AppState.activeScene.getObjectByName(entry.name) : null;
+        if (obj) focusOnObject(obj);
+        break;
+      }
     }
   });
 }
