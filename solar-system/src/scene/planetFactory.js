@@ -187,6 +187,13 @@ export function createPlanet(data) {
       moonMesh.userData.info = { name: m.name, meta: m.meta || {}, info: m.info || "" };
       moonPivot.add(moonMesh);
 
+      if (REAL_TEXTURE_URLS[m.name]) {
+        loadRealTexture(REAL_TEXTURE_URLS[m.name], (tex) => {
+          moonMat.map = tex;
+          moonMat.needsUpdate = true;
+        });
+      }
+
       // faint orbit path, same style as the planet orbit rings
       const segs = 64;
       const pts = [];

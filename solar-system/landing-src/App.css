@@ -1,0 +1,160 @@
+/* The ACTUAL scroll container — fixed to the viewport, scrolling its own
+   content internally. `<html>`/`<body>` (the main app's own fixed-viewport
+   3D scene, which never expects the page itself to scroll) are never
+   touched: this is a fully self-contained scrolling pane layered on top,
+   not a hack that borrowed the real page's own scroll. That also means
+   there's nothing to scroll PAST — the main app underneath can never be
+   revealed by scrolling too far, since this pane's own overflow is what's
+   bounding the scroll, not document height. */
+.gv-landing {
+  position: fixed;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  z-index: 1000; /* above every z-index in the main app's own style.css (max ~500) */
+  background: radial-gradient(ellipse at 50% 40%, #131a30 0%, #0a0e1c 45%, var(--gv-bg) 100%);
+  color: var(--gv-text);
+  font-family: "Segoe UI", Arial, sans-serif;
+  transition: opacity 0.9s ease;
+}
+
+.gv-landing--exit {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.gv-strands-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.gv-hero {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 24px 6%;
+}
+
+.gv-hero-title {
+  margin: 0 0 18px;
+  font-size: clamp(2.75rem, 8vw, 5rem);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  background: linear-gradient(90deg, var(--gv-blue), var(--gv-gold), var(--gv-purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gv-hero-hint {
+  margin: 26px 0 0;
+  font-size: 0.8125rem;
+  letter-spacing: 0.02em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.gv-hero-copy {
+  max-width: 480px;
+  margin: 0 0 22px;
+  font-size: clamp(13px, 1.6vw, 16px);
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.gv-cta {
+  position: relative;
+  z-index: 1;
+  background: linear-gradient(90deg, var(--gv-blue), var(--gv-gold));
+  color: #0b0d18;
+  font-weight: 700;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  border: none;
+  border-radius: 999px;
+  padding: 15px 40px;
+  cursor: pointer;
+  box-shadow: 0 0 18px rgba(122, 184, 255, 0.4);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.gv-cta:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 30px rgba(255, 210, 122, 0.55);
+}
+
+.gv-section {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 90px 24px;
+  text-align: center;
+}
+
+.gv-section-title {
+  font-size: clamp(24px, 3.4vw, 40px);
+  font-weight: 700;
+  margin: 0 0 14px;
+  background: linear-gradient(90deg, var(--gv-blue), var(--gv-gold), var(--gv-purple));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.gv-section-copy {
+  max-width: 620px;
+  margin: 0 auto 40px;
+  color: var(--gv-text-dim);
+  font-size: clamp(13px, 1.5vw, 16px);
+  line-height: 1.6;
+}
+
+.gv-gravity-frame {
+  width: 100%;
+  height: min(70vh, 620px);
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid var(--gv-border);
+  background: var(--gv-bg-panel);
+  backdrop-filter: blur(6px);
+  box-shadow: 0 20px 60px -20px rgba(0, 0, 0, 0.7);
+}
+
+.gv-gallery-section .accordion-gallery {
+  margin-top: 8px;
+}
+
+.gv-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  padding: 60px 24px 110px;
+}
+
+.gv-cta--footer {
+  padding: 17px 48px;
+  font-size: 16px;
+}
+
+@media (max-width: 640px) {
+  .gv-section {
+    padding: 60px 18px;
+  }
+  .gv-gravity-frame {
+    height: 60vh;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gv-landing {
+    transition: none;
+  }
+}

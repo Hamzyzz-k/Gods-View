@@ -80,6 +80,13 @@ export const SIZE_ENTITIES = [
     name: "Pluto", category: "Dwarf Planet", diameterKm: 2377, color: "#cbb79a",
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ef/Pluto_in_True_Color_-_High-Res.jpg/1280px-Pluto_in_True_Color_-_High-Res.jpg",
   },
+  {
+    name: "Ceres", category: "Dwarf Planet", diameterKm: 939.4, color: "#9b9488",
+    // NASA/JPL-Caltech Dawn mission approach imagery, individually verified
+    // against the live Wikimedia Commons API (866x616 original, public
+    // domain — no thumb rendition needed).
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/01/PIA19319-Ceres-DwarfPlanet-Dawn-RC3-image1-20150426.jpg",
+  },
 
   // ---- moons ----
   {
@@ -214,6 +221,12 @@ export const SIZE_ENTITIES = [
     name: "Cartwheel Galaxy", category: "Galaxy", diameterKm: 150000 * LY_KM, color: "#ffb6a0",
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/2/26/Cartwheel_Galaxy.jpg",
   },
+  {
+    name: "Cygnus A", category: "Galaxy", diameterKm: 60000 * LY_KM, color: "#ffcfa0",
+    // NASA/Chandra/STScI/NRAO composite (X-ray + optical + radio), public
+    // domain, individually verified against the live Wikimedia Commons API.
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a4/Cygnus_A_composite.jpg",
+  },
   // These two are whole clusters, not single galaxies — real span across
   // their many members, included specifically for the contrast: even
   // Andromeda is a rounding error next to a cluster's full extent.
@@ -249,6 +262,21 @@ export const SIZE_ENTITIES = [
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/cf/Black_hole_-_Messier_87.jpg/1280px-Black_hole_-_Messier_87.jpg",
     credit: "Event Horizon Telescope / ESO, CC BY 4.0",
   },
+  {
+    name: "Cygnus A's Central Black Hole", category: "Black Hole", diameterKm: 2.5e9 * 5.906, note: "event horizon", color: "#ff8c3a",
+    // Mass ~2.5 billion M☉ (Tadhunter et al., stellar-dynamical measurement)
+    // — no telescope has resolved this horizon, stays procedural like
+    // Andromeda's/Centaurus A's holes above.
+  },
+  // The largest black hole commonly cited in public astronomy — no
+  // telescope has resolved anything but a faint point of light this far
+  // away (unlike Sagittarius A*/M87*'s real EHT images above), so this
+  // stays procedural too rather than passing off an unremarkable star-like
+  // survey dot as a meaningful "photo." Mass ~6.6×10^10 M☉ is the commonly
+  // published estimate (Shemmer et al.) — a genuinely debated figure in the
+  // literature, included here as the widely-cited public number, not a
+  // precision measurement.
+  { name: "TON 618", category: "Black Hole", diameterKm: 6.6e10 * 5.906, note: "event horizon", color: "#ff8c3a" },
 ];
 
 export function searchSizeEntities(query) {

@@ -14,6 +14,32 @@ initScene();
 createStarfield(AppState.scene);
 AppState.constellations = createConstellations(AppState.scene);
 
+// Landing page handoff: the landing page itself is a separate React bundle
+// (landing-src/, see index.html) with no shared module state with this app,
+// so it hands off via a plain DOM CustomEvent instead — fired once, when the
+// user dismisses it, optionally naming a specific tier (the AccordionGallery
+// panel they picked). Registered this early so it's live regardless of how
+// long the rest of this file's own (awaited, sequential) boot takes — by the
+// time a real user has scrolled through the landing page and clicked
+// through, the app below is always long since finished booting anyway; the
+// dynamic import + jumpToTierCinematic's own canChangeTier() guard make this
+// safe even in the (practically unreachable) case it somehow isn't.
+document.addEventListener("gv:enter-app", async (e) => {
+  const tier = e.detail?.tier;
+  if (!tier) return;
+  const { jumpToTierCinematic } = await import("./cosmos/tierTransition.js");
+  jumpToTierCinematic(tier);
+});
+
+// The reverse handoff: clicking the "God's View" title re-opens the
+// landing page. The React bundle is only ever hidden on dismiss (display:
+// none + a CSS opacity class), never unmounted, so this is a plain
+// CustomEvent the other direction — landing-src/App.jsx listens for
+// "gv:show-landing" and undoes exactly what its own dismiss handler did.
+document.getElementById("godsViewTitle")?.addEventListener("click", () => {
+  document.dispatchEvent(new CustomEvent("gv:show-landing"));
+});
+
 // Scene contents — order matters: the sun and planets must exist before
 // anything that raycasts against them or registers them for visibility.
 await import("./scene/sun.js");
@@ -66,10 +92,11 @@ initTripLog();
 const { initQuiz } = await import("./edu/quiz.js");
 initQuiz();
 
-// Size comparison panel: search/select 2+ bodies, see them on a shared log
-// scale bar. Inert until its button is clicked.
-const { initSizeComparePanel } = await import("./ui/sizeComparePanel.js");
-initSizeComparePanel();
+// Size Compare: a scripted, full-scene-takeover sequence — flat grid
+// comparisons, then escalating orbit-ring diagrams up to black-hole scale.
+// Inert until its button is clicked.
+const { initSizeCompareMode } = await import("./sizeCompare/sizeCompareMode.js");
+initSizeCompareMode();
 
 // Earth landmark photospheres (desktop). Inert until Earth is focused and
 // its Visit a Real Place button is clicked.

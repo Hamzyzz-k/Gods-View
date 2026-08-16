@@ -28,6 +28,16 @@ export const TIER_DATA = [
     cameraNear: 0.1,
     cameraFar: 5000,
     controlsMax: 800,
+    // Real-world distance range this tier spans, for the running scale-bar
+    // label shown during a tier transition (cosmos/tierTransition.js's
+    // getTransitionProgress(), ui/scaleBar.js). `far` is Proxima Centauri's
+    // real distance — the natural bridge into the next tier's "nearby
+    // stars" framing, and (by design) exactly milkyWay's own `near` below,
+    // so a transition's distance readout is always continuous across the
+    // boundary. Never used for literal 3D-scene placement, same "real
+    // number for display only" policy this file's own header sets for
+    // dMaxLy below.
+    realDistanceLy: { near: 0, far: 4.24 },
     getScene: () => AppState.scene,
   },
   {
@@ -41,6 +51,9 @@ export const TIER_DATA = [
     cameraNear: 1,
     cameraFar: 20000,
     controlsMax: 6000,
+    // `far` is the Large Magellanic Cloud's real distance — the nearest
+    // Local Group member, and (by design) exactly localGroup's own `near`.
+    realDistanceLy: { near: 4.24, far: 160000 },
     buildScene: () => {
       const scene = new THREE.Scene();
       scene.name = "tier:milkyWay";
@@ -61,6 +74,7 @@ export const TIER_DATA = [
     cameraNear: 5,
     cameraFar: 30000,
     controlsMax: 9000,
+    realDistanceLy: { near: 160000, far: 2800000 },
     buildScene: () => {
       const scene = new THREE.Scene();
       scene.name = "tier:localGroup";
@@ -81,6 +95,7 @@ export const TIER_DATA = [
     cameraNear: 10,
     cameraFar: 200000,
     controlsMax: 15000,
+    realDistanceLy: { near: 2800000, far: 55000000 },
     buildScene: () => {
       const scene = new THREE.Scene();
       scene.name = "tier:supercluster";
@@ -103,6 +118,14 @@ export const TIER_DATA = [
     cameraNear: 20,
     cameraFar: WEB_RADIUS * 6,
     controlsMax: WEB_RADIUS * 2.2,
+    // `far` is the true observable-universe radius (~46.5 billion ly) — the
+    // real edge of what's visible at all, distinct from the 4e9 ly dMaxLy
+    // passed to buildGalaxiesForTier() just below (that number compresses
+    // GALAXY PLACEMENT within this tier's roster; this one is display-only,
+    // for whatever the scale bar shows once a transition finishes arriving
+    // here — same "two different numbers, two different jobs" split this
+    // tier's own header comment already draws).
+    realDistanceLy: { near: 55000000, far: 46500000000 },
     buildScene: () => {
       const scene = new THREE.Scene();
       scene.name = "tier:observableUniverse";

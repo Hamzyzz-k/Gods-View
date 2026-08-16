@@ -22,7 +22,14 @@ function applyView(view) {
 // planet's surface (a wholly separate mode axis, not a tier) neither has
 // anywhere sensible to swap TO.
 export function canChangeTier() {
-  return AppState.mode === "orbital" && !AppState.tierBusy;
+  // sizeCompareOpen guard: Size Compare (sizeCompare/sizeCompareMode.js)
+  // also reassigns AppState.activeScene directly (its own full-scene
+  // takeover) — a tier change firing while it's open would silently steal
+  // activeScene back from under it, leaving sizeCompareOpen stuck true
+  // against a scene that's no longer on screen. Every tier-change entry
+  // point (breadcrumb, VR scale panel, voice, scroll-scrub) already funnels
+  // through this one gate, so guarding here covers all of them at once.
+  return AppState.mode === "orbital" && !AppState.tierBusy && !AppState.sizeCompareOpen;
 }
 
 // The instant scene-swap mechanics — no animation of its own. The cinematic
@@ -64,7 +71,14 @@ export function enterTier(targetId) {
   camera.updateProjectionMatrix();
   controls.maxDistance = tier.controlsMax;
 
-  applyView(savedViews.get(targetId) || tier.defaultView);
+  // Desktop only: applyView() writes camera.position/controls.target
+  // directly, exactly what the rig-is-the-only-thing-that-moves invariant
+  // forbids once a WebXR session owns the camera. In VR there's no
+  // meaningful "restore this tier's saved camera framing" concept anyway —
+  // the rig is a free-flight first-person position, not an orbit camera,
+  // and cosmos/tierTransition.js's VR dolly already places the rig itself
+  // via its own PUSH_FACTOR math before/after this call.
+  if (!AppState.xrSession) applyView(savedViews.get(targetId) || tier.defaultView);
 
   AppState.tier = targetId;
   AppState.activeScene = targetScene;

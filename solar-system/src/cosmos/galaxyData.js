@@ -125,12 +125,40 @@ export const GALAXY_DATA = [
     distanceLy: 53500000,
     type: "Galaxy cluster",
     color: 0xd8e4ff,
+    // A real, individually-verified wide-field photo DOES exist for this one
+    // (unlike a true "photo of the whole cluster," this is the actual sky
+    // region — NASA/ESA/Digitized Sky Survey, public domain), so it no
+    // longer has to stay purely procedural like Andromeda's/Centaurus A's
+    // unresolved black hole nuclei do.
+    imageUrl:
+      "https://upload.wikimedia.org/wikipedia/commons/thumb/a/ab/Wide-field_view_of_the_Virgo_cluster_of_galaxies_%28ground-based_image%29_%28heic0815i%29.jpg/1280px-Wide-field_view_of_the_Virgo_cluster_of_galaxies_%28ground-based_image%29_%28heic0815i%29.jpg",
     meta: { Type: "Galaxy cluster (~1,300+ members)", Distance: "~53.5 million ly" },
     info: "The nearest large galaxy cluster to the Local Group, anchored by the giant elliptical galaxy M87. The Local Group is gravitationally drawn toward the Virgo Cluster as part of the larger Virgo Supercluster.",
     blackHole: {
       name: "M87*",
       meta: { Type: "Supermassive black hole", Mass: "~6.5 billion M☉", Host: "M87, Virgo Cluster" },
       info: "The first black hole ever directly imaged, by the Event Horizon Telescope in 2019 — the famous glowing orange ring around a dark center. At roughly 6.5 billion solar masses, it anchors the giant elliptical galaxy M87 at the heart of the Virgo Cluster and powers a jet of particles over 5,000 light-years long.",
+    },
+  },
+  {
+    name: "Cygnus A",
+    altName: "3C 405",
+    tier: "observableUniverse",
+    raHours: 19.991,
+    decDeg: 40.734,
+    distanceLy: 700000000,
+    type: "Elliptical galaxy",
+    color: 0xffcfa0,
+    // NASA/Chandra/STScI/NRAO composite (X-ray + optical + radio), public
+    // domain, individually verified against the live Wikimedia Commons API
+    // — same URL used in data/sizeData.js's entry for this galaxy.
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/a/a4/Cygnus_A_composite.jpg",
+    meta: { Type: "Elliptical radio galaxy", Distance: "~700 million ly" },
+    info: "One of the closest powerful radio galaxies to Earth — its two vast lobes of radio-emitting plasma, launched by jets from its central black hole, were among the first sources ever detected by radio astronomy. Chandra X-ray imaging revealed a giant bubble of hot gas surrounding the whole system.",
+    blackHole: {
+      name: "Cygnus A's Central Black Hole",
+      meta: { Type: "Supermassive black hole", Mass: "~2.5 billion M☉", Host: "Cygnus A" },
+      info: "The supermassive black hole powering Cygnus A's twin radio jets and lobes — one of the most powerful known sources of radio emission in the sky, discovered before its host galaxy was even identified.",
     },
   },
   {

@@ -1,6 +1,16 @@
 import * as THREE from "three";
 import { registerTierClickables } from "../interaction/raycastPicking.js";
 import { buildBlackHole } from "./blackHole.js";
+import { loadRealTexture } from "../textures/realTextures.js";
+
+// The real NASA/JPL-Caltech "artist's concept, view from above" Milky Way
+// illustration (R. Hurt, 2005 Spitzer press release) — public domain,
+// individually verified against the live Wikimedia Commons API (1350x1350
+// original, this is the 1280px thumb rendition). This is what actually
+// carries the "looks like a real galaxy" read at this tier now; the
+// particle spiral below stays as a close-up detail/parallax layer under it.
+const MILKY_WAY_PHOTO_URL =
+  "https://upload.wikimedia.org/wikipedia/commons/thumb/0/09/Milky_Way_2005.jpg/1280px-Milky_Way_2005.jpg";
 
 // ---------- Milky Way tier content ----------
 // Stylized, not scientifically accurate — the same "plausible, not to
@@ -74,7 +84,10 @@ function buildStarField() {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
-  const mat = new THREE.PointsMaterial({ size: 6, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.9, depthWrite: false });
+  // Opacity halved from the pre-photo-plane value (was 0.9) — this field is
+  // now a close-up detail/parallax layer sitting under buildGalaxyPhoto(),
+  // not the tier's primary visual.
+  const mat = new THREE.PointsMaterial({ size: 6, vertexColors: true, sizeAttenuation: true, transparent: true, opacity: 0.45, depthWrite: false });
   const points = new THREE.Points(geo, mat);
   points.name = "milkyWaySpiral";
   return points;
@@ -179,9 +192,57 @@ export function buildMilkyWayHomeMarker() {
   return group;
 }
 
+// A flat, real photographic plane of the whole galaxy, lying on the same XZ
+// disk the particle spiral occupies — this is the primary visual read at
+// this tier now, the same "real photo over a procedural fallback" upgrade
+// path every planet/moon material in this app already uses (see
+// textures/realTextures.js). Starts fully transparent (opacity 0) rather
+// than a flat placeholder color: if the fetch ever fails, it just never
+// appears, and the particle spiral underneath still carries the tier on its
+// own exactly as it did before this plane existed — a real, harmless
+// fallback, not a broken-looking gray square.
+//
+// AdditiveBlending (not a plain alpha blend) because the source JPG has no
+// alpha channel — its black background is real black pixels, not
+// transparency. Additive blending makes those black pixels contribute
+// nothing to the final frame, so the square canvas edge never shows against
+// the scene's own black backdrop; only the actual galaxy glow does.
+//
+// A single flat plane won't hold up from a steep side angle (reads as a
+// flat cutout, not a 3D object) — mitigated by DoubleSide (visible from
+// underneath too) plus the particle field's own real depth underneath it.
+// The tier's own defaultView/controlsMax already bias toward near-top-down
+// viewing, so this is judged an acceptable trade-off rather than building a
+// costlier multi-layer "puffy disc."
+function buildGalaxyPhoto() {
+  const size = GALAXY_RADIUS * 2.15;
+  const geo = new THREE.PlaneGeometry(size, size);
+  const mat = new THREE.MeshBasicMaterial({
+    transparent: true,
+    opacity: 0,
+    blending: THREE.AdditiveBlending,
+    depthWrite: false,
+    side: THREE.DoubleSide,
+    fog: false,
+  });
+  const plane = new THREE.Mesh(geo, mat);
+  plane.rotation.x = -Math.PI / 2; // lie flat on the XZ plane, matching the star field's disk
+  plane.name = "milkyWayPhoto";
+  plane.renderOrder = -1; // draw behind the particle field/core so those still read as distinct points of light on top
+
+  loadRealTexture(MILKY_WAY_PHOTO_URL, (tex) => {
+    mat.map = tex;
+    mat.opacity = 1;
+    mat.needsUpdate = true;
+  });
+
+  return plane;
+}
+
 export function buildMilkyWayContent() {
   const group = new THREE.Group();
   group.name = "milkyWayContent";
+  group.add(buildGalaxyPhoto());
   group.add(buildStarField());
   group.add(buildGalacticCore());
   group.add(buildYouAreHereMarker());

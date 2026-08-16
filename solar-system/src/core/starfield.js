@@ -1,5 +1,13 @@
 import * as THREE from "three";
 
+// Base point size, read back by cosmos/tierTransition.js so it can briefly
+// boost the ACTIVE tier's own starfield size during a dolly (a cheap
+// "stars are streaking past as you accelerate" continuity cue) and reset
+// to exactly this value afterward, rather than hardcoding the same number
+// in two files.
+export const STARFIELD_BASE_SIZE = 1.1;
+export const STARFIELD_NAME = "backgroundStarfield";
+
 export function createStarfield(scene) {
   const starGeo = new THREE.BufferGeometry();
   const starCount = 6000;
@@ -15,10 +23,11 @@ export function createStarfield(scene) {
   starGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
   const starMat = new THREE.PointsMaterial({
     color: 0xffffff,
-    size: 1.1,
+    size: STARFIELD_BASE_SIZE,
     sizeAttenuation: true,
   });
   const stars = new THREE.Points(starGeo, starMat);
+  stars.name = STARFIELD_NAME;
   scene.add(stars);
   return stars;
 }

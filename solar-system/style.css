@@ -30,21 +30,54 @@ canvas {
   overflow: hidden;
 }
 
-/* A subtle spinning radial streak pattern — a cheap, CSS-only approximation
-   of hyperspace/warp motion during the dolly, rather than a real WebGL
-   particle streak effect (not worth the added scene complexity for what's
-   only ever on screen for ~2.4s, cosmos/tierTransition.js's own duration). */
-#tierTransitionOverlay::before {
-  content: "";
+/* The real "flying through stars" warp canvas — src/cosmos/warpStarfield.js
+   draws directly into this every frame during a transition (sized to the
+   viewport by src/cosmos/tierTransition.js's resize handling), so this rule
+   only needs to position it — no background/animation of its own. */
+#tierTransitionWarpCanvas {
   position: absolute;
-  inset: -50%;
-  background: repeating-conic-gradient(from 0deg, rgba(255,255,255,0.07) 0deg 1deg, transparent 1deg 9deg);
-  animation: streak-spin 6s linear infinite;
+  inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-@keyframes streak-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+/* Running distance readout (src/ui/scaleBar.js) — only shown while a tier
+   transition is in flight, opacity-driven exactly like #tierTransitionOverlay
+   above it. Sits above the overlay's own z-index (200) so the number stays
+   legible even while the veil is at its darkest. */
+#cosmicScaleBar {
+  position: fixed;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 210;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: min(70vw, 520px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+#cosmicScaleBar.visible {
+  opacity: 1;
+}
+
+.cosmic-scale-bar__line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255, 255, 255, 0.35);
+}
+
+#cosmicScaleBarText {
+  flex-shrink: 0;
+  color: rgba(232, 236, 247, 0.92);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.6);
 }
 
 /* Presentation/kiosk mode (src/ui/kioskMode.js) — hides every panel except
@@ -66,7 +99,7 @@ body.kiosk #agentPanel,
 body.kiosk #tripLogModal,
 body.kiosk #quizModal,
 body.kiosk #landmarksModal,
-body.kiosk #sizeCompareModal,
+body.kiosk #sizeCompareBar,
 body.kiosk #exitLandmarkBtn {
   display: none !important;
 }
@@ -168,6 +201,18 @@ body.kiosk #kioskExitHint {
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+/* Clicking it re-opens the landing page (src/main.js) — cursor + a subtle
+   hover fade is the only affordance needed, the gradient text already
+   reads as "special" the way #ui's other real buttons don't. */
+#godsViewTitle {
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+#godsViewTitle:hover {
+  opacity: 0.75;
 }
 
 .row {
@@ -403,6 +448,30 @@ body.kiosk #kioskExitHint {
 
 #landBtn:hover {
   filter: brightness(1.08);
+}
+
+/* Visit a Real Place (Earth only) — had no rule at all before, so it was
+   rendering as an unstyled default browser button (tiny, gray, easy to
+   mistake for "no button" against this panel's dark theme). Same pill
+   shape as #landBtn/#infoReset, styled as a distinct third tier — a blue
+   outline rather than #landBtn's filled gold/blue gradient — so "the
+   stylized Land on Surface" and "the real 360° photosphere" read as two
+   different, clearly real actions rather than one being invisible. */
+#landmarksBtn {
+  width: 100%;
+  background: rgba(122, 184, 255, 0.12);
+  border: 1px solid rgba(122, 184, 255, 0.45);
+  color: #bcdcff;
+  font-weight: 600;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 12px;
+  cursor: pointer;
+  margin-bottom: 8px;
+}
+
+#landmarksBtn:hover {
+  background: rgba(122, 184, 255, 0.22);
 }
 
 .hidden {
@@ -1190,195 +1259,68 @@ body.kiosk #kioskExitHint {
   cursor: pointer;
 }
 
-/* ---------- size comparison panel (src/ui/sizeComparePanel.js) ---------- */
-#sizeCompareModal {
+/* ---------- Size Compare (src/sizeCompare/sizeCompareMode.js) ----------
+   A slim chrome bar over the 3D viewport itself — the comparison content
+   is real scene geometry (a full-scene takeover), not a DOM popup, so this
+   is just Prev/Next/Exit + a title, the same treatment #tourBar already
+   gets for the same reason (a scripted sequence driving the real scene). */
+#sizeCompareBar {
   position: fixed;
-  inset: 0;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 30;
   display: none;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-}
-#sizeCompareModal.visible {
-  display: flex;
-}
-#sizeCompareBackdrop {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.72);
-  backdrop-filter: blur(4px);
-}
-#sizeCompareCard {
-  position: relative;
-  z-index: 1;
-  width: min(720px, 94vw);
-  max-height: 86vh;
-  overflow-y: auto;
-  background: rgba(14, 16, 28, 0.92);
+  gap: 8px;
+  background: rgba(14, 16, 28, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 14px;
-  padding: 20px 22px;
+  padding: 14px 22px;
   color: #e8ecf7;
-  box-shadow: 0 20px 60px rgba(0,0,0,0.55);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+  text-align: center;
 }
-#sizeCompareCard h3 {
-  font-size: 16px;
-  margin-bottom: 14px;
+#sizeCompareBar.visible {
+  display: flex;
+}
+#sizeCompareStepLabel {
+  font-size: 11px;
+  opacity: 0.55;
+  letter-spacing: 0.04em;
+}
+#sizeCompareTitle {
+  font-size: 15px;
+  margin: 0;
   background: linear-gradient(90deg, #ffd27a, #7ab8ff);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
-#sizeCompareClose {
-  position: absolute;
-  top: 12px;
-  right: 14px;
-  background: none;
-  border: none;
-  color: #e8ecf7;
-  font-size: 20px;
-  cursor: pointer;
-  opacity: 0.6;
-  line-height: 1;
-}
-#sizeCompareClose:hover {
-  opacity: 1;
-}
-#sizeCompareSearch {
-  width: 100%;
-  background: rgba(255,255,255,0.08);
-  border: 1px solid rgba(255,255,255,0.18);
-  color: #e8ecf7;
-  border-radius: 8px;
-  padding: 9px 12px;
-  font-size: 13px;
-  outline: none;
-  margin-bottom: 10px;
-}
-#sizeCompareSearch::placeholder {
-  color: rgba(232,236,247,0.4);
-}
-#sizeCompareList {
-  max-height: 180px;
-  overflow-y: auto;
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 8px;
-  margin-bottom: 12px;
-}
-.size-row {
+#sizeCompareBar .row {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+}
+#sizeCompareBar button {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #e8ecf7;
+  border-radius: 8px;
+  padding: 7px 14px;
   font-size: 12px;
   cursor: pointer;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.size-row:last-child {
-  border-bottom: none;
+#sizeCompareBar button:hover {
+  background: rgba(255, 255, 255, 0.18);
 }
-.size-row:hover {
-  background: rgba(255,255,255,0.08);
+#sizeCompareBar button:disabled {
+  opacity: 0.35;
+  cursor: default;
+  pointer-events: none;
 }
-.size-row.selected {
-  background: rgba(122,184,255,0.16);
-}
-.size-row-name {
-  font-weight: 600;
-}
-.size-row-meta {
-  opacity: 0.55;
-  font-size: 11px;
-  white-space: nowrap;
-}
-#sizeCompareSelected {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-bottom: 18px;
-  min-height: 20px;
-}
-.size-chip {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255,210,122,0.14);
-  border: 1px solid rgba(255,210,122,0.4);
-  color: #ffd27a;
-  border-radius: 999px;
-  padding: 4px 6px 4px 12px;
-  font-size: 12px;
-}
-.size-chip button {
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  font-size: 14px;
-  line-height: 1;
-  opacity: 0.7;
-  padding: 2px 6px;
-}
-.size-chip button:hover {
-  opacity: 1;
+#sizeCompareExitBtn {
+  margin-top: 2px;
+  color: #ffb0a0;
 }
 
-/* Proportionally-sized circles, bottom-aligned like the classic "planets
-   lined up by size" infographic — see src/ui/sizeComparePanel.js's header
-   for why this replaced an earlier log-scale-axis version. Every column
-   shares a fixed height and packs its circle+label to the bottom
-   (justify-content: flex-end), which lines up circle bottoms across
-   columns without needing to compute pixel offsets by hand: the label
-   block's height is the same in every column, so "pack to the bottom"
-   alone is enough to align the circles sitting above it. */
-#sizeCompareBar {
-  position: relative;
-  min-height: 40px;
-}
-.size-bar-empty {
-  opacity: 0.5;
-  font-size: 12px;
-  text-align: center;
-  padding: 20px 0;
-}
-.size-body-row {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 18px 22px;
-  padding: 20px 6px 6px;
-}
-.size-body-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  height: 210px;
-}
-.size-body-circle {
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.size-body-label {
-  margin-top: 10px;
-  font-size: 12px;
-  text-align: center;
-  white-space: nowrap;
-  max-width: 120px;
-  white-space: normal;
-}
-.size-body-value {
-  display: block;
-  opacity: 0.55;
-  font-size: 10px;
-  margin-top: 2px;
-}
-.size-body-credit {
-  display: block;
-  opacity: 0.4;
-  font-size: 9px;
-  font-style: italic;
-  margin-top: 1px;
-}

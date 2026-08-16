@@ -1,0 +1,15 @@
+/* Same design tokens as the main app's style.css — panel bg, borders,
+   text, and the three accent colors (blue/gold/purple) used everywhere
+   from buttons to glows to gradient headings. Kept as real CSS variables
+   here (not hardcoded per-component) so the landing page and the rest of
+   the app read as one product, not two different sites stitched together. */
+:root {
+  --gv-bg: #05060c;
+  --gv-bg-panel: rgba(10, 12, 24, 0.72);
+  --gv-border: rgba(255, 255, 255, 0.14);
+  --gv-text: #e8ecf7;
+  --gv-text-dim: rgba(232, 236, 247, 0.6);
+  --gv-blue: #7ab8ff;
+  --gv-gold: #ffd27a;
+  --gv-purple: #b98bff;
+}

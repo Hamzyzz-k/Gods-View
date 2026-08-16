@@ -7,14 +7,42 @@
      browsers otherwise log to the console on every load. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='8' fill='%23ffd27a'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='4' fill='none' stroke='%237ab8ff' stroke-width='2' transform='rotate(-20 16 16)'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="style.css" />
+<!-- The one built asset in an otherwise buildless site — the React landing
+     page (landing-src/, built by `npm run build`, see vite.landing.config.js
+     and CLAUDE.md's "Running it" section). Fixed filenames, no content hash,
+     so this reference never goes stale between builds. -->
+<link rel="stylesheet" href="landing-dist/landing.css" />
 </head>
 <body>
+
+  <!-- React mounts the landing page here (landing-src/main.jsx) — a DOM
+       overlay on top of everything else. The 3D scene underneath is already
+       booting/rendering while this sits in front of it, so dismissing it
+       (landing-src/App.jsx's enterApp()) needs no app-boot-order changes on
+       this side, just a gv:enter-app CustomEvent — see src/main.js. -->
+  <div id="landing-root"></div>
+  <script type="module" src="landing-dist/landing.js"></script>
 
   <!-- Full-screen fade used only during a cosmic-scale tier transition
        (src/cosmos/tierTransition.js) — opacity is driven procedurally,
        frame by frame, in sync with the camera dolly, not by a CSS
        transition. -->
-  <div id="tierTransitionOverlay"></div>
+  <div id="tierTransitionOverlay">
+    <!-- Real "flying through stars" warp effect (src/cosmos/warpStarfield.js,
+         driven from src/cosmos/tierTransition.js) — particles hurtle toward
+         the viewer and streak into trails, drawn fresh every frame at
+         viewport resolution. -->
+    <canvas id="tierTransitionWarpCanvas"></canvas>
+  </div>
+
+  <!-- Running distance readout shown only while a tier transition is in
+       flight (src/ui/scaleBar.js) — matches the reference "powers of ten"
+       zoom video's continuously-updating scale-bar label. -->
+  <div id="cosmicScaleBar">
+    <span class="cosmic-scale-bar__line"></span>
+    <span id="cosmicScaleBarText"></span>
+    <span class="cosmic-scale-bar__line"></span>
+  </div>
 
   <!-- Only shown while presentation/kiosk mode (src/ui/kioskMode.js) is
        active — every other panel is hidden via body.kiosk in style.css. -->
@@ -25,7 +53,11 @@
   </div>
 
   <div id="ui">
-    <h1>God's View</h1>
+    <!-- Clicking the title re-opens the React landing page (src/main.js
+         dispatches gv:show-landing, landing-src/App.jsx listens for it) —
+         the landing bundle is never unmounted on dismiss, just hidden, so
+         this just reverses that. -->
+    <h1 id="godsViewTitle" title="Back to the landing page">God's View</h1>
     <div class="row">
       <label for="speed">Speed</label>
       <input type="range" id="speed" min="0" max="5" step="0.1" value="1" />
@@ -155,19 +187,19 @@
     </div>
   </div>
 
-  <!-- Search-and-select size comparison (src/ui/sizeComparePanel.js). Picks
-       any 2+ real astronomical bodies from src/data/sizeData.js and plots
-       them on a shared logarithmic scale bar. -->
-  <div id="sizeCompareModal">
-    <div id="sizeCompareBackdrop"></div>
-    <div id="sizeCompareCard">
-      <button id="sizeCompareClose">&times;</button>
-      <h3>Compare Sizes</h3>
-      <input id="sizeCompareSearch" type="text" placeholder="Search Earth, Sun, Andromeda, Sagittarius A*…" autocomplete="off" />
-      <div id="sizeCompareList"></div>
-      <div id="sizeCompareSelected"></div>
-      <div id="sizeCompareBar"></div>
+  <!-- Size Compare (src/sizeCompare/sizeCompareMode.js): a scripted,
+       full-scene-takeover sequence — flat grid comparisons, then escalating
+       orbit-ring diagrams up to black-hole scale. This slim chrome bar sits
+       over the 3D viewport itself (the comparison content IS the scene, not
+       a popup) — Prev/Next/Exit only, no search UI, manual pacing. -->
+  <div id="sizeCompareBar">
+    <div id="sizeCompareStepLabel"></div>
+    <h3 id="sizeCompareTitle"></h3>
+    <div class="row">
+      <button id="sizeComparePrevBtn">&larr; Prev</button>
+      <button id="sizeCompareNextBtn">Next &rarr;</button>
     </div>
+    <button id="sizeCompareExitBtn">Exit Compare</button>
   </div>
 
   <div id="infoPanel">

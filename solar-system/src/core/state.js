@@ -70,4 +70,13 @@ export const AppState = {
   // True only during the cinematic dolly between tiers (cosmos/
   // tierTransition.js) — blocks starting a second transition mid-flight.
   tierBusy: false,
+
+  // ---------- Size Compare ----------
+  // True while the size-compare sequence (sizeCompare/sizeCompareMode.js)
+  // has taken over the render target. A separate flag rather than a third
+  // axis of `mode` above (which only ever meant fly-vs-walk) — core/loop.js
+  // swaps `activeScene` to a dedicated size-compare scene while this is
+  // true, the same "swap what gets rendered, leave everything else running
+  // underneath" trick Surface Mode and cosmic tiers already use.
+  sizeCompareOpen: false,
 };

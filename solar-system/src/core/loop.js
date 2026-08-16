@@ -22,6 +22,7 @@ import { updateTourUI } from "../ui/tourControls.js";
 import { getTierById } from "../cosmos/tierData.js";
 import { updateTierTransition } from "../cosmos/tierTransition.js";
 import { updateScaleBreadcrumb } from "../ui/scaleBreadcrumb.js";
+import { updateScaleBar } from "../ui/scaleBar.js";
 import { updateKioskMode } from "../ui/kioskMode.js";
 import { updateTripLog } from "../edu/tripLog.js";
 import { updateLandmarkUI } from "../landmark/desktopLandmarkUI.js";
@@ -193,7 +194,14 @@ export function animate() {
   // duration, so the unconditional controls.update() below correctly skips
   // itself rather than fighting the transition's own camera.position writes.
   updateTierTransition();
+  // The VR branch (cosmos/tierTransition.js) may have just written
+  // rig.position directly, the same class of write updateFocus() above
+  // already re-propagates after — nothing downstream this frame reads the
+  // rig's world transform, but this closes the gap defensively rather than
+  // relying on that staying true.
+  if (AppState.xrSession) rig.updateMatrixWorld(true);
   updateScaleBreadcrumb();
+  updateScaleBar();
   updateKioskMode();
   updateTripLog();
   updateLandmarkUI();

@@ -1,4 +1,6 @@
 node_modules/
+solar-system/landing-dist/
+Instareferences/
 .env
 .env.local
 .netlify/

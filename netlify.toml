@@ -1,8 +1,11 @@
 [build]
   publish = "solar-system"
   functions = "netlify/functions"
+  # The ONE build step in an otherwise buildless static site — bundles just
+  # the React landing page (landing-src/, vite.landing.config.js) into
+  # solar-system/landing-dist/. Everything else in solar-system/src/ is
+  # still plain ES modules loaded via importmap at runtime, unbundled.
+  command = "npm run build"
 
-# The site itself is a static, no-build-step ES-module app loaded via importmap.
-# Only the serverless functions run Node.
 [build.environment]
   NODE_VERSION = "20"

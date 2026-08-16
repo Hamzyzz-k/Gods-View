@@ -2,6 +2,9 @@ import { AppState } from "../core/state.js";
 import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
 import { registerPanel } from "./controllerRaycast.js";
 import { getTierLadder } from "../cosmos/tierNavigation.js";
+import { getTierById, getTierIndex } from "../cosmos/tierData.js";
+import { getTransitionProgress } from "../cosmos/tierTransition.js";
+import { formatDistanceLy } from "../cosmos/distanceFormat.js";
 
 // ---------- VR scale panel ----------
 // The desktop breadcrumb bar's VR counterpart. Unlike the breadcrumb (which
@@ -26,7 +29,12 @@ const BUTTONS = [
 const PADDING = 20;
 const GAP = 14;
 const CELL = 110;
-const LABEL_H = 60;
+// Taller than a single text line (was 60) to reserve room for the running
+// distance readout below the tier label — same content ui/scaleBar.js shows
+// on desktop, drawn here only while a transition is actually in flight
+// (blank the rest of the time, same "reserve the space, don't always fill
+// it" approach the desktop version's opacity-driven fade uses instead).
+const LABEL_H = 90;
 
 const CANVAS_W = PADDING * 2 + CELL * BUTTONS.length + GAP * (BUTTONS.length - 1);
 const CANVAS_H = PADDING * 2 + CELL + LABEL_H;
@@ -78,7 +86,26 @@ export function redrawScalePanel() {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = COLORS.gold;
-  ctx.fillText(tier?.label || "", W / 2, PADDING + LABEL_H / 2);
+  ctx.fillText(tier?.label || "", W / 2, PADDING + LABEL_H / 2 - 16);
+
+  // Same running distance readout as ui/scaleBar.js's desktop version, only
+  // drawn while a transition is actually in flight — this function already
+  // redraws every visible frame, so the number stays live without any extra
+  // wiring beyond reading the same getTransitionProgress() getter.
+  const progress = getTransitionProgress();
+  if (progress) {
+    const fromTier = getTierById(progress.fromTierId);
+    const toTier = getTierById(progress.toTierId);
+    if (fromTier?.realDistanceLy && toTier?.realDistanceLy) {
+      const ascending = getTierIndex(progress.toTierId) > getTierIndex(progress.fromTierId);
+      const startLy = ascending ? fromTier.realDistanceLy.far : fromTier.realDistanceLy.near;
+      const endLy = ascending ? toTier.realDistanceLy.far : toTier.realDistanceLy.near;
+      const ly = startLy + (endLy - startLy) * progress.t;
+      ctx.font = "22px sans-serif";
+      ctx.fillStyle = COLORS.text;
+      ctx.fillText(formatDistanceLy(ly), W / 2, PADDING + LABEL_H / 2 + 20);
+    }
+  }
 
   buttonHitRects.length = 0;
   BUTTONS.forEach((btn, i) => {
