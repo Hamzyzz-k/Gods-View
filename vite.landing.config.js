@@ -7,8 +7,8 @@ import react from "@vitejs/plugin-react";
 // of the app (solar-system/src/**) stays exactly what it already was: plain
 // ES modules loaded via importmap, no build step, no bundler touching them.
 // This is the ONE build step in an otherwise buildless static site — see
-// netlify.toml's `command` and CLAUDE.md's "Running it" section for how that
-// fits into the deploy/dev workflow.
+// netlify.toml's `command` and the project README's "Running locally"
+// section for how that fits into the deploy/dev workflow.
 export default defineConfig({
   root: __dirname,
   plugins: [react()],
