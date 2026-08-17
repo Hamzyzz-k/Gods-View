@@ -9,3 +9,54 @@
 
 [build.environment]
   NODE_VERSION = "20"
+
+# ---------- security headers ----------
+# The Content-Security-Policy is the important one. It is defence in depth for
+# HTML-injection bugs: even if untrusted text reaches the DOM as markup, the
+# browser refuses to execute injected scripts or load anything from an origin
+# not listed here. That matters most once accounts exist, because a script
+# running on the page could otherwise read the session token out of
+# localStorage. See tasks/security.md.
+#
+# Every allowed origin below is one the app genuinely uses:
+#   cdn.jsdelivr.net          three.js, loaded via the import map
+#   upload.wikimedia.org      planet/moon/galaxy imagery
+#   api.spaceflightnewsapi.net  news ticker
+#   api.wheretheiss.at        live ISS position
+# Anything else is blocked. When Supabase is added, its project URL has to be
+# appended to connect-src or every auth and database call will be refused.
+#
+# The 'sha256-...' entry whitelists the one inline script in index.html — the
+# import map, which cannot be moved to an external file because import maps
+# must be inline. It is pinned by hash rather than allowing 'unsafe-inline',
+# which would defeat most of the point by also permitting injected inline
+# handlers like onerror=. IF THE IMPORT MAP IS EVER EDITED, recompute with:
+#   python3 -c "import hashlib,base64,re;raw=open('solar-system/index.html',encoding='utf-8').read();print('sha256-'+base64.b64encode(hashlib.sha256(re.search(r'<script type=\"importmap\">(.*?)</script>',raw,re.S).group(1).encode()).digest()).decode())"
+#
+# style-src keeps 'unsafe-inline' because the React landing page sets inline
+# styles. That is a far smaller risk than allowing inline script: it permits
+# restyling, not code execution.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-4V1UclJClx9/FV6gHP29z3mTvSralDNQnI7ho0PBBtY=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org; media-src 'self' blob: data:; font-src 'self'; connect-src 'self' https://api.spaceflightnewsapi.net https://api.wheretheiss.at https://cdn.jsdelivr.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+
+    # Stops the site being framed by another page, which is how clickjacking
+    # works. frame-ancestors above covers modern browsers; this covers old ones.
+    X-Frame-Options = "DENY"
+
+    # Stops the browser second-guessing a declared Content-Type, which is how
+    # an uploaded or proxied file can end up executed as script.
+    X-Content-Type-Options = "nosniff"
+
+    # Send the full URL only to ourselves; only the bare origin off-site.
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+    # Deny hardware the app never uses, and explicitly keep the two it does:
+    # the microphone (voice commands) and spatial tracking (WebXR). Leaving
+    # those out would silently break voice control and VR.
+    Permissions-Policy = "geolocation=(), camera=(), payment=(), usb=(), magnetometer=(), microphone=(self), xr-spatial-tracking=(self)"
+
+    # Force HTTPS for a year. Netlify already serves HTTPS; this stops a
+    # downgrade attempt on a hostile network from ever being attempted.
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains"

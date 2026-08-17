@@ -211,6 +211,14 @@ body.kiosk #kioskExitHint {
   margin: 0 18px;
 }
 
+/* Replaces an inline style="opacity:0.5" that used to be built into the
+   ticker's HTML string — see src/data/spaceNews.js, which now constructs
+   real nodes instead so nothing from that third-party feed is ever parsed
+   as markup. */
+.ticker-site {
+  opacity: 0.5;
+}
+
 #ui {
   position: fixed;
   top: 44px;

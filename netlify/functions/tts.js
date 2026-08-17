@@ -8,6 +8,14 @@
 // is only hit when the client TTS engine is switched to "elevenlabs".
 // Set ELEVENLABS_API_KEY in the Netlify dashboard to enable it.
 
+import { guardRequest, capString } from "./lib/guard.js";
+
+// ElevenLabs bills by character, so an uncapped `text` field is a direct
+// route to spending real money on someone else's behalf. Narration in this
+// app is a body name plus a short description; 800 characters is well clear
+// of that and still bounds the cost of any single call.
+const MAX_TEXT_CHARS = 800;
+
 const VOICE_ID = "cT5LqmY8Y5dz4bRVJKSy"; // "Rachel" — a premade voice; only
 // use ids from your dashboard's "My Voices" tab. Shared/community "Voice
 // Library" voices return 402 on the free API tier.
@@ -15,9 +23,11 @@ const MODEL_ID = "eleven_turbo_v2_5"; // fast + natural; swap to
 // eleven_multilingual_v2 for non-English narration.
 
 export const handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method not allowed" };
-  }
+  // Method, origin and rate-limit checks, shared with assistant.js. This
+  // endpoint spends paid credits, so it is the one that most needs them.
+  // Plain-text bodies here, matching what this function already returns.
+  const rejected = guardRequest(event, { onReject: (message) => message });
+  if (rejected) return { ...rejected, headers: { "Content-Type": "text/plain" }, body: JSON.parse(rejected.body) };
 
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) {
@@ -47,7 +57,7 @@ export const handler = async (event) => {
           Accept: "audio/mpeg",
         },
         body: JSON.stringify({
-          text,
+          text: capString(text, MAX_TEXT_CHARS),
           model_id: MODEL_ID,
           voice_settings: { stability: 0.4, similarity_boost: 0.8 },
         }),

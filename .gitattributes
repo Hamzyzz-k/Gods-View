@@ -1,0 +1,7 @@
+# The Content-Security-Policy in netlify.toml pins the inline import map in
+# solar-system/index.html by SHA-256 hash. That hash covers the exact bytes of
+# the script, line endings included — so if Git checked this file out with
+# CRLF on Windows (the default here), the hash would no longer match, the
+# browser would refuse to run the import map, and three.js would fail to load
+# at all. Forcing LF keeps the deployed bytes identical everywhere.
+solar-system/index.html text eol=lf

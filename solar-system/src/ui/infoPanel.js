@@ -13,12 +13,42 @@ export const infoClose = document.getElementById("infoClose");
 export const infoReset = document.getElementById("infoReset");
 
 
+// Chips are built as real nodes with .textContent rather than assembled into
+// an HTML string. The body metadata itself comes from local data files and is
+// trusted, but the live chips below (appendLiveChips) carry values straight
+// from third-party APIs — and mixing "safe here, unsafe there" invites the
+// wrong one getting copied later. One construction path, always safe.
+function renderChips(container, entries) {
+  const frag = document.createDocumentFragment();
+  entries.forEach((text) => {
+    const chip = document.createElement("span");
+    chip.textContent = text;
+    frag.appendChild(chip);
+  });
+  container.replaceChildren(frag);
+}
+
+// Live values from an external API (the ISS tracker, Solar System OpenData).
+// Grouped in their own row and appended after the static metadata.
+function appendLiveChips(container, texts) {
+  const row = document.createElement("div");
+  row.className = "real-data-row";
+  texts.forEach((text) => {
+    const chip = document.createElement("span");
+    chip.className = "real-data";
+    chip.textContent = text; // never innerHTML: these strings are not ours
+    row.appendChild(chip);
+  });
+  container.appendChild(row);
+}
+
 export function showInfoFor(obj) {
   const data = obj.userData.info;
   infoName.textContent = data.name;
-  infoMeta.innerHTML = Object.entries(data.meta)
-    .map(([k, v]) => `<span>${k}: ${v}</span>`)
-    .join("");
+  renderChips(
+    infoMeta,
+    Object.entries(data.meta).map(([k, v]) => `${k}: ${v}`)
+  );
   infoDesc.textContent = data.info;
   infoCredit.textContent = "";
   infoPanel.classList.add("visible");
@@ -37,10 +67,7 @@ export function showInfoFor(obj) {
           live.visibility ? `Currently: ${live.visibility === "daylight" ? "in sunlight" : "in Earth's shadow"}` : null,
           `Position: ${live.latitude.toFixed(1)}°, ${live.longitude.toFixed(1)}°`,
         ].filter(Boolean);
-        infoMeta.insertAdjacentHTML(
-          "beforeend",
-          `<div class="real-data-row">${chips.map((t) => `<span class="real-data">${t}</span>`).join("")}</div>`
-        );
+        appendLiveChips(infoMeta, chips);
         infoCredit.textContent = "Live tracking: wheretheiss.at (updates every ~12s)";
       })
       .catch(() => {
@@ -59,10 +86,7 @@ export function showInfoFor(obj) {
         facts.orbitalPeriodDays ? `Orbit: ${formatNumber(facts.orbitalPeriodDays)} days` : null,
       ].filter(Boolean);
       if (chips.length) {
-        infoMeta.insertAdjacentHTML(
-          "beforeend",
-          `<div class="real-data-row">${chips.map((t) => `<span class="real-data">${t}</span>`).join("")}</div>`
-        );
+        appendLiveChips(infoMeta, chips);
         infoCredit.textContent = "Verified stats: Solar System OpenData";
       }
     });

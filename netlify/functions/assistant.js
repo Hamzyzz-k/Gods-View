@@ -10,6 +10,8 @@
 // browser. Set it in the Netlify dashboard under
 // Site settings -> Environment variables.
 
+import { guardRequest, capString } from "./lib/guard.js";
+
 const GEMINI_ENDPOINT = "https://generativelanguage.googleapis.com/v1beta/interactions";
 
 // gemini-3.6-flash is the current stable balanced model. Swap to
@@ -229,10 +231,19 @@ function extractText(data) {
   return legacy || "";
 }
 
+// Caps on what gets forwarded to a metered API. `command` is a one-line
+// instruction and `context` a small scene-state object, so these are far
+// above any legitimate use while still bounding the token cost of a single
+// request. See lib/guard.js for why this endpoint needs bounding at all.
+const MAX_COMMAND_CHARS = 500;
+const MAX_CONTEXT_CHARS = 4000;
+
 export const handler = async (event) => {
-  if (event.httpMethod !== "POST") {
-    return json(405, { reply: "Method not allowed.", actions: [] });
-  }
+  // Method, origin and rate-limit checks, shared with tts.js. The rejection
+  // body keeps this function's { reply, actions } shape so the browser's
+  // fallback path (assistant/localParser.js) still understands the response.
+  const rejected = guardRequest(event, { onReject: (reply) => ({ reply, actions: [] }) });
+  if (rejected) return rejected;
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -254,9 +265,12 @@ export const handler = async (event) => {
     return json(400, { reply: "No command provided.", actions: [] });
   }
 
+  // Both values are truncated before they reach the model — request size is
+  // token cost, so an unbounded payload is a cost and availability lever for
+  // anyone calling this endpoint directly.
   const input = [
-    `User command: ${command}`,
-    `Current scene state: ${JSON.stringify(context ?? {})}`,
+    `User command: ${capString(command, MAX_COMMAND_CHARS)}`,
+    `Current scene state: ${capString(JSON.stringify(context ?? {}), MAX_CONTEXT_CHARS)}`,
   ].join("\n\n");
 
   try {
