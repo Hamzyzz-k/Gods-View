@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import CuriosityScroll from "./components/CuriosityScroll.jsx";
 import GravityWell from "./components/GravityWell.jsx";
 import Strands from "./components/Strands.jsx";
 import AccordionGallery from "./components/AccordionGallery.jsx";
@@ -81,6 +82,8 @@ export default function App() {
         </button>
         <p className="gv-hero-hint">Scroll to explore</p>
       </section>
+
+      <CuriosityScroll />
 
       <section className="gv-section gv-gravity-section">
         <h2 className="gv-section-title">This is what gravity actually looks like</h2>

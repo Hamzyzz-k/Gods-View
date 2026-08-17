@@ -1,5 +1,5 @@
 import { AppState } from "../core/state.js";
-import { TIER_DATA, getTierIndex, getTierById } from "./tierData.js";
+import { TIER_DATA, getTierIndex, getTierById, VR_NEAR_PLANE } from "./tierData.js";
 import { getTierScene } from "./tierScenes.js";
 import { clearFocus } from "../interaction/focus.js";
 
@@ -66,7 +66,10 @@ export function enterTier(targetId) {
   // which clamps camera distance to controls.maxDistance immediately — set
   // in the wrong order, the first frame in a tier gets silently clamped to
   // the PREVIOUS tier's (usually much smaller) limit instead of this one's.
-  camera.near = tier.cameraNear;
+  // In VR the tier's own near plane would clip away every rig-mounted panel
+  // (they sit ~2.6m out, the outer tiers' near planes are 5-20) — see
+  // VR_NEAR_PLANE's comment in tierData.js for the full reasoning.
+  camera.near = AppState.xrSession ? VR_NEAR_PLANE : tier.cameraNear;
   camera.far = tier.cameraFar;
   camera.updateProjectionMatrix();
   controls.maxDistance = tier.controlsMax;

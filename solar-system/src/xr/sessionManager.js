@@ -1,5 +1,6 @@
 import { VRButton } from "three/addons/webxr/VRButton.js";
 import { AppState } from "../core/state.js";
+import { getTierById, VR_NEAR_PLANE } from "../cosmos/tierData.js";
 
 // ---------- WebXR session lifecycle ----------
 //
@@ -128,6 +129,14 @@ function registerSessionHandlers() {
     AppState.rig.position.copy(AppState.camera.position);
     AppState.camera.position.set(0, 0, 0);
 
+    // A session can start while the player is already out at an outer tier,
+    // whose own near plane (up to 20) would clip away every rig-mounted VR
+    // panel — they sit ~2.6m out. cosmos/tierNavigation.js applies this on
+    // every subsequent tier change; this covers the tier we're already in.
+    // See VR_NEAR_PLANE's comment in cosmos/tierData.js.
+    AppState.camera.near = VR_NEAR_PLANE;
+    AppState.camera.updateProjectionMatrix();
+
     console.info("XR session started.");
   });
 
@@ -146,6 +155,16 @@ function registerSessionHandlers() {
     }
     AppState.rig.position.set(0, 0, 0);
     AppState.rig.quaternion.identity();
+
+    // Hand the current tier's own near plane back, since the VR-safe one
+    // above was only needed while rig-mounted panels were on screen. Each
+    // tier picks its near/far for depth precision at its own scale, so
+    // leaving 0.1 in place on desktop would give away precision for nothing.
+    const tier = getTierById(AppState.tier);
+    if (tier) {
+      AppState.camera.near = tier.cameraNear;
+      AppState.camera.updateProjectionMatrix();
+    }
 
     controls.update();
     console.info("XR session ended.");

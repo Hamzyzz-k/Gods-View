@@ -46,6 +46,7 @@ export function updateTourUI() {
 
   playPauseBtn.textContent = AppState.tourState === "paused" ? "▶" : "⏸";
   playPauseBtn.title = AppState.tourState === "paused" ? "Resume tour" : "Pause tour";
+  playPauseBtn.setAttribute("aria-label", playPauseBtn.title); // keep the accessible name in sync with the tooltip, same toggle
   const itinerary = getItinerary();
   const stop = itinerary[AppState.tourIndex];
   stopLabel.textContent = stop ? `${AppState.tourIndex + 1}/${itinerary.length} · ${stop.label}` : "";

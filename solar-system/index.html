@@ -99,6 +99,17 @@
 
   <div id="tooltip"></div>
 
+  <!-- Curiosity card (src/edu/curiosityCards.js): poses a question about
+       whatever scale you just arrived at, and holds the answer back until
+       you ask for it. Shows once per tier per session. -->
+  <div id="curiosityCard" role="region" aria-label="Something to wonder about">
+    <button id="curiosityClose" aria-label="Dismiss">&times;</button>
+    <div id="curiosityEyebrow">Curious?</div>
+    <p id="curiosityQuestion"></p>
+    <button id="curiosityRevealBtn">Find out</button>
+    <p id="curiosityAnswer"></p>
+  </div>
+
   <!-- The cosmic scale ladder's always-visible navigation (see
        ui/scaleBreadcrumb.js). Segments are populated at runtime from
        cosmos/tierData.js's ordered ladder, so the button count grows as
@@ -106,16 +117,16 @@
        AppState.mode === 'surface' (see ui/scaleBreadcrumb.js) — tier
        navigation has no meaning while walking on a planet. -->
   <div id="scaleBreadcrumb">
-    <button id="tierDescendBtn" title="Zoom in">−</button>
+    <button id="tierDescendBtn" title="Zoom in" aria-label="Zoom in to the next tier">−</button>
     <span id="scaleBreadcrumbSegments"></span>
-    <button id="tierAscendBtn" title="Zoom out">+</button>
+    <button id="tierAscendBtn" title="Zoom out" aria-label="Zoom out to the previous tier">+</button>
   </div>
 
   <!-- Shown only while a guided tour is active (see ui/tourControls.js). -->
   <div id="tourBar" class="hidden">
-    <button id="tourPrevBtn" title="Previous planet">⏮</button>
-    <button id="tourPlayPauseBtn" title="Pause tour">⏸</button>
-    <button id="tourNextBtn" title="Next planet">⏭</button>
+    <button id="tourPrevBtn" title="Previous planet" aria-label="Previous planet">⏮</button>
+    <button id="tourPlayPauseBtn" title="Pause tour" aria-label="Pause tour">⏸</button>
+    <button id="tourNextBtn" title="Next planet" aria-label="Next planet">⏭</button>
     <span id="tourStopLabel"></span>
     <button id="tourExitBtn" title="Exit tour">Exit Tour</button>
   </div>
@@ -140,16 +151,16 @@
   <button id="vrSizeNextBtn" class="hidden"></button>
 
   <div id="eventToast">
-    <button id="eventToastClose">&times;</button>
+    <button id="eventToastClose" aria-label="Dismiss notification">&times;</button>
     <div id="eventToastTitle"></div>
     <div id="eventToastBody"></div>
   </div>
 
   <div id="eclipseCalModal">
     <div id="eclipseCalBackdrop"></div>
-    <div id="eclipseCalCard">
-      <button id="eclipseCalClose">&times;</button>
-      <h3> Upcoming Real Eclipses</h3>
+    <div id="eclipseCalCard" role="dialog" aria-modal="true" aria-labelledby="eclipseCalTitle">
+      <button id="eclipseCalClose" aria-label="Close">&times;</button>
+      <h3 id="eclipseCalTitle">Upcoming Real Eclipses</h3>
       <div id="eclipseCalBody">Loading…</div>
       <div class="modal-credit">Source: NASA / USNO eclipse predictions — a static, hand-curated list (accurate through early 2028), not a live feed.</div>
     </div>
@@ -160,9 +171,9 @@
 
   <div id="landmarksModal">
     <div id="landmarksBackdrop"></div>
-    <div id="landmarksCard">
-      <button id="landmarksClose">&times;</button>
-      <h3>Visit a Real Place on Earth</h3>
+    <div id="landmarksCard" role="dialog" aria-modal="true" aria-labelledby="landmarksTitle">
+      <button id="landmarksClose" aria-label="Close">&times;</button>
+      <h3 id="landmarksTitle">Visit a Real Place on Earth</h3>
       <div id="landmarksBody">Loading…</div>
       <div class="modal-credit">Real 360° photospheres, sourced from Wikimedia Commons.</div>
     </div>
@@ -170,9 +181,9 @@
 
   <div id="tripLogModal">
     <div id="tripLogBackdrop"></div>
-    <div id="tripLogCard">
-      <button id="tripLogClose">&times;</button>
-      <h3>Trip Log</h3>
+    <div id="tripLogCard" role="dialog" aria-modal="true" aria-labelledby="tripLogTitle">
+      <button id="tripLogClose" aria-label="Close">&times;</button>
+      <h3 id="tripLogTitle">Trip Log</h3>
       <div id="tripLogBody">Loading…</div>
       <button id="tripLogClearBtn">Clear Log</button>
     </div>
@@ -180,9 +191,9 @@
 
   <div id="quizModal">
     <div id="quizBackdrop"></div>
-    <div id="quizCard">
-      <button id="quizClose">&times;</button>
-      <h3>Quick Quiz</h3>
+    <div id="quizCard" role="dialog" aria-modal="true" aria-labelledby="quizTitle">
+      <button id="quizClose" aria-label="Close">&times;</button>
+      <h3 id="quizTitle">Quick Quiz</h3>
       <div id="quizBody">Loading…</div>
     </div>
   </div>
@@ -202,8 +213,8 @@
     <button id="sizeCompareExitBtn">Exit Compare</button>
   </div>
 
-  <div id="infoPanel">
-    <button id="infoClose">&times;</button>
+  <div id="infoPanel" role="region" aria-label="Selected body info">
+    <button id="infoClose" aria-label="Close">&times;</button>
     <h2 id="infoName">—</h2>
     <div id="infoMeta"></div>
     <p id="infoDesc"></p>

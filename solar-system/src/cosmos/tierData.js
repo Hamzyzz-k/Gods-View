@@ -20,6 +20,23 @@ import { buildObservableUniverseBackdrop, WEB_RADIUS } from "./cosmicWeb.js";
 // that tier is active — the solar system's own orbital sim already runs
 // unconditionally regardless of tier (see loop.js's comment on why), so it
 // has no `update` here.
+// Near-clip plane used INSTEAD of each tier's own `cameraNear` while a WebXR
+// session is running. Every VR panel in this app sits about 2.6 metres from
+// the rig (xr/vrControlPanel.js's FORWARD_Z and friends), and the transition
+// veil is a 2-metre sphere around it — so the outer tiers' own near planes
+// (localGroup 5, supercluster 10, observableUniverse 20, all chosen for
+// depth precision across galaxy-spanning distances) would put every one of
+// those INSIDE the near plane and clip them away entirely. That was a real
+// bug: in VR the control/scale/tour/size panels silently vanished from the
+// Local Group outward, so there was no way to navigate back down the ladder
+// once past the Milky Way.
+//
+// Safe to keep this small even at the outermost tier: with near 0.1 and far
+// 48000 the depth resolution out at the cosmic web is still far finer than
+// the objects there are large, and the galaxies are additive points with
+// depthWrite off, so they don't depend on depth ordering anyway.
+export const VR_NEAR_PLANE = 0.1;
+
 export const TIER_DATA = [
   {
     id: "solarSystem",

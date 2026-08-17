@@ -98,6 +98,11 @@ initQuiz();
 const { initSizeCompareMode } = await import("./sizeCompare/sizeCompareMode.js");
 initSizeCompareMode();
 
+// Curiosity cards: poses a question on arriving at each new cosmic tier.
+// Inert until a tier actually changes.
+const { initCuriosityCards } = await import("./edu/curiosityCards.js");
+initCuriosityCards();
+
 // Earth landmark photospheres (desktop). Inert until Earth is focused and
 // its Visit a Real Place button is clicked.
 const { initDesktopLandmarkUI } = await import("./landmark/desktopLandmarkUI.js");

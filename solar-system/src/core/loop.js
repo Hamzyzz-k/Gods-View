@@ -23,6 +23,7 @@ import { getTierById } from "../cosmos/tierData.js";
 import { updateTierTransition } from "../cosmos/tierTransition.js";
 import { updateScaleBreadcrumb } from "../ui/scaleBreadcrumb.js";
 import { updateScaleBar } from "../ui/scaleBar.js";
+import { updateCuriosityCards } from "../edu/curiosityCards.js";
 import { updateKioskMode } from "../ui/kioskMode.js";
 import { updateTripLog } from "../edu/tripLog.js";
 import { updateLandmarkUI } from "../landmark/desktopLandmarkUI.js";
@@ -202,6 +203,7 @@ export function animate() {
   if (AppState.xrSession) rig.updateMatrixWorld(true);
   updateScaleBreadcrumb();
   updateScaleBar();
+  updateCuriosityCards();
   updateKioskMode();
   updateTripLog();
   updateLandmarkUI();

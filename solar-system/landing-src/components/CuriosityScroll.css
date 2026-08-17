@@ -1,0 +1,111 @@
+.cs {
+  position: relative;
+  z-index: 1;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 90px 24px;
+}
+
+.cs-eyebrow {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gv-gold);
+  margin: 0 0 10px;
+}
+
+.cs-title {
+  font-size: clamp(24px, 3.4vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 54px;
+  color: var(--gv-text);
+}
+
+.cs-list {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+/* Asymmetric on purpose: the stat column is fixed and narrow, the prose
+   column takes the rest. A 50/50 split would make the number feel like a
+   label rather than the answer landing. */
+.cs-item {
+  display: grid;
+  grid-template-columns: minmax(150px, 210px) 1fr;
+  gap: 28px;
+  align-items: start;
+  padding: 26px 0;
+  border-top: 1px solid var(--gv-border);
+
+  /* Pre-reveal state. Transform + opacity only, so this stays on the
+     compositor and never triggers layout. */
+  opacity: 0;
+  transform: translateY(26px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* A short per-item stagger so a group entering together cascades instead of
+   snapping in as one block. --cs-i is set inline per item in the JSX. */
+.cs-item--in {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(var(--cs-i, 0) * 60ms);
+}
+
+.cs-item__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cs-item__statValue {
+  font-size: clamp(26px, 3.6vw, 40px);
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--gv-gold);
+  font-variant-numeric: tabular-nums;
+}
+
+.cs-item__statLabel {
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--gv-text-dim);
+}
+
+.cs-item__q {
+  font-size: clamp(16px, 1.9vw, 21px);
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0 0 10px;
+  color: var(--gv-text);
+}
+
+.cs-item__a {
+  font-size: clamp(13px, 1.5vw, 15px);
+  line-height: 1.65;
+  margin: 0;
+  max-width: 62ch;
+  color: var(--gv-text-dim);
+}
+
+@media (max-width: 720px) {
+  .cs {
+    padding: 60px 18px;
+  }
+  /* Single column below the breakpoint — the two-column grid would squeeze
+     both halves into unreadable slivers. */
+  .cs-item {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cs-item {
+    transition: none;
+  }
+}
