@@ -113,6 +113,9 @@ export default function App() {
         <button type="button" className="gv-cta gv-cta--footer" onClick={() => enterApp(null)}>
           Enter God's View
         </button>
+        <a className="gv-credits-link" href="credits.html" target="_blank" rel="noopener noreferrer">
+          Image credits &amp; licenses
+        </a>
       </footer>
     </div>
   );
