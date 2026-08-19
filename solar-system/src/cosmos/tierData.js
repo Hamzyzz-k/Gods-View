@@ -4,6 +4,7 @@ import { createStarfield } from "../core/starfield.js";
 import { buildMilkyWayContent, buildMilkyWayHomeMarker, buildHomeMarker } from "./milkyWay.js";
 import { buildGalaxiesForTier } from "./galaxyFactory.js";
 import { buildObservableUniverseBackdrop, WEB_RADIUS } from "./cosmicWeb.js";
+import { buildBigBangContent, updateBigBang, BIG_BANG_RADIUS } from "./bigBang.js";
 
 // ---------- the cosmic scale ladder ----------
 // Ordered innermost (solar system) to outermost. `defaultView` is only used
@@ -152,6 +153,39 @@ export const TIER_DATA = [
       scene.add(buildGalaxiesForTier("observableUniverse", 1500, WEB_RADIUS * 0.9, 4000000000));
       return scene;
     },
+  },
+  {
+    id: "bigBang",
+    label: "The Big Bang",
+    // The one rung that isn't a bigger box. Every tier below this one is a
+    // step outward in SPACE; this is a step backward in TIME, to the moment
+    // the space in all of them began. That is a real distinction and the UI
+    // says so rather than quietly pretending 13.8 billion years is just a
+    // longer distance — see `journey` below, which ui/scaleBar.js and
+    // ui/scaleBreadcrumb.js use to switch their readout from a distance to a
+    // time. Placed at the top of the ladder because that is where "keep
+    // zooming out" honestly ends: past the observable universe there is no
+    // more space to see, only earlier time.
+    journey: { kind: "time", label: "13.8 billion years ago", caption: "Looking back in time, not further out in space" },
+    defaultView: { cameraPos: [0, 3200, 7200], target: [0, 0, 0] },
+    cameraNear: 5,
+    cameraFar: BIG_BANG_RADIUS * 8,
+    controlsMax: BIG_BANG_RADIUS * 2.4,
+    // Kept for the scale bar's interpolation on the way IN from the
+    // observable universe. `far` repeats the observable-universe radius
+    // because that genuinely is as far as distance goes — the extra span of
+    // this tier is time, which `journey` above carries instead.
+    realDistanceLy: { near: 46500000000, far: 46500000000 },
+    buildScene: () => {
+      const scene = new THREE.Scene();
+      scene.name = "tier:bigBang";
+      // No starfield: there are no stars yet at t=0, and the whole point of
+      // the sequence is watching matter appear where there was none.
+      scene.add(new THREE.AmbientLight(0x333344, 0.4));
+      scene.add(buildBigBangContent());
+      return scene;
+    },
+    update: (scene, dt) => updateBigBang(scene, dt),
   },
 ];
 

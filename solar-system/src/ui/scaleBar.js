@@ -42,7 +42,18 @@ export function updateScaleBar() {
   const endLy = ascending ? toTier.realDistanceLy.far : toTier.realDistanceLy.near;
   const ly = startLy + (endLy - startLy) * progress.t;
 
-  textEl.textContent = `${formatDistanceLy(ly)} · ${toTier.label}`;
+  // A tier can declare that its rung of the ladder is a step through TIME
+  // rather than distance (tierData.js's `journey`). The Big Bang is the only
+  // one: past the observable universe there is no more space to travel, only
+  // earlier time, and showing "46.5 billion light-years" while arriving at
+  // t=0 would be quietly wrong. Distance is still shown on the way in, right
+  // up to the boundary, then hands over to the time label.
+  const journey = ascending ? toTier.journey : fromTier.journey;
+  if (journey && progress.t > 0.5) {
+    textEl.textContent = `${journey.label} · ${toTier.label}`;
+  } else {
+    textEl.textContent = `${formatDistanceLy(ly)} · ${toTier.label}`;
+  }
 
   if (!visible) {
     visible = true;

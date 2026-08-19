@@ -101,9 +101,16 @@ export function redrawScalePanel() {
       const startLy = ascending ? fromTier.realDistanceLy.far : fromTier.realDistanceLy.near;
       const endLy = ascending ? toTier.realDistanceLy.far : toTier.realDistanceLy.near;
       const ly = startLy + (endLy - startLy) * progress.t;
+      // Mirrors ui/scaleBar.js: a tier may declare its rung as a step through
+      // time rather than distance (tierData.js's `journey`). See that file.
+      const journey = ascending ? toTier.journey : fromTier.journey;
       ctx.font = "22px sans-serif";
       ctx.fillStyle = COLORS.text;
-      ctx.fillText(formatDistanceLy(ly), W / 2, PADDING + LABEL_H / 2 + 20);
+      ctx.fillText(
+        journey && progress.t > 0.5 ? journey.label : formatDistanceLy(ly),
+        W / 2,
+        PADDING + LABEL_H / 2 + 20
+      );
     }
   }
 

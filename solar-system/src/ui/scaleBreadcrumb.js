@@ -23,13 +23,19 @@ export function initScaleBreadcrumb() {
     if (i > 0) {
       const sep = document.createElement("span");
       sep.className = "sep";
-      sep.textContent = "›";
+      // Every rung but one is a step further out in space. A tier that
+      // declares itself a step through TIME instead (tierData.js's `journey`
+      // — only the Big Bang) gets a different mark, so the ladder doesn't
+      // silently imply that 13.8 billion years is just a longer distance.
+      sep.textContent = tier.journey ? "⇠" : "›";
+      if (tier.journey) sep.title = tier.journey.caption;
       segmentsEl.appendChild(sep);
     }
     const btn = document.createElement("button");
     btn.id = `tierSegmentBtn_${tier.id}`;
     btn.textContent = tier.label;
     btn.dataset.tierId = tier.id;
+    if (tier.journey) btn.title = tier.journey.caption;
     // A direct jump, not forced to step through every tier in between —
     // jumpToTierCinematic() still plays the same dolly/fade regardless of
     // how many rungs of the ladder it's skipping.
