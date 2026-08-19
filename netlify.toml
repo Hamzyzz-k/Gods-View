@@ -10,6 +10,25 @@
 [build.environment]
   NODE_VERSION = "20"
 
+# Without this block, `netlify dev` auto-detects "vite" from package.json's
+# devDependencies and assumes there's a live Vite DEV SERVER to proxy on a
+# port (5173 by default) -- correct for a normal Vite app, wrong here. This
+# site has no such thing: `npm run build` above is a one-shot build that
+# writes solar-system/landing-dist/ and exits; solar-system/src/** is
+# unbundled ES modules with nothing to watch. Auto-detection ran that build
+# command, watched it exit immediately (correctly -- it's not supposed to
+# keep running), never saw port 5173 open, and gave up: "Waiting for Vite
+# dev server to be ready on port 5173 ... Shutting down Netlify Dev server."
+#
+# framework = "#static" tells Netlify Dev to skip framework detection
+# entirely and serve `publish` directly, the same static-file model already
+# used in production (build once, then serve the output) -- not a live
+# framework dev server to proxy.
+[dev]
+  framework = "#static"
+  publish = "solar-system"
+  functions = "netlify/functions"
+
 # ---------- security headers ----------
 # The Content-Security-Policy is the important one. It is defence in depth for
 # HTML-injection bugs: even if untrusted text reaches the DOM as markup, the
