@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
+import { updateBigBangAudio, stopBigBangAudio } from "./bigBangAudio.js";
 
 // ---------- the Big Bang tier ----------
 // An artistic visualization of the universe forming, built to be stood
@@ -28,7 +29,10 @@ import { AppState } from "../core/state.js";
 // this tier animates continuously, where the others are largely static.
 
 const PARTICLE_COUNT = 90000;
-const GALAXY_COUNT = 46;
+// Raised from 46 alongside the reach change below: the volume they now fill is
+// roughly thirty times larger, and the old count spread through it would have
+// left the sky nearly empty. Sprites, so this is cheap.
+const GALAXY_COUNT = 190;
 
 // Radius the shell reaches at full expansion, in scene units. Chosen to sit
 // comfortably inside the tier's own camera far plane while still being large
@@ -338,12 +342,148 @@ function buildGalaxies() {
     const u = rand() * 2 - 1;
     const phi = rand() * Math.PI * 2;
     const s = Math.sqrt(1 - u * u);
-    // Held between 0.25 and 0.95 of the shell radius so galaxies sit within
-    // the structure rather than at its dead centre or stranded outside it.
-    const r = BIG_BANG_RADIUS * (0.25 + rand() * 0.7);
-    sprite.userData.home = new THREE.Vector3(s * Math.cos(phi), u * 0.75, s * Math.sin(phi)).multiplyScalar(r);
-    sprite.userData.scale = BIG_BANG_RADIUS * (0.02 + rand() * 0.045);
+    // Spread from close in to well BEYOND the tier's zoom limit
+    // (controlsMax is 2.4x BIG_BANG_RADIUS), and across a full sphere rather
+    // than a flattened one. Previously they occupied 0.25-0.95 of the shell
+    // radius with y squashed to 0.75, so pulling the camera back far enough
+    // turned the universe into a small lens-shaped clump floating in an
+    // otherwise empty void. Reaching past the furthest the player can get
+    // means galaxies still surround them at maximum zoom-out, which is the
+    // only way "everywhere" is true rather than merely true up close.
+    //
+    // Cube-rooted so they are spread evenly through the VOLUME instead of
+    // bunching into a shell — a uniform radius would leave the near field
+    // sparse and pile everything up at the edge.
+    const r = BIG_BANG_RADIUS * (0.12 + Math.cbrt(rand()) * 2.85);
+    sprite.userData.home = new THREE.Vector3(s * Math.cos(phi), u, s * Math.sin(phi)).multiplyScalar(r);
+    // Sized by distance, so remote ones don't shrink to invisible specks and
+    // near ones don't swamp the view.
+    sprite.userData.scale = BIG_BANG_RADIUS * 0.022 + r * 0.030;
     sprite.scale.setScalar(sprite.userData.scale);
+    group.add(sprite);
+  }
+  return group;
+}
+
+// ---------- the star flare ----------
+// The single most recognisable thing in the reference: the core is not a round
+// glow, it is a hard white point with a long vertical diffraction spike and a
+// shorter horizontal one, exactly like a bright star photographed through a
+// lens. The tier had a translucent cone standing in for this, which reads as a
+// soft searchlight rather than a flare — too wide, too dim, and shaped nothing
+// like it.
+//
+// Drawn once to a canvas and used as a Sprite, so it always faces the player
+// and needs no orientation logic of its own.
+function makeStarFlare() {
+  const S = 512;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = S;
+  const ctx = canvas.getContext("2d");
+  const c = S / 2;
+
+  ctx.globalCompositeOperation = "lighter";
+
+  // Vertical spike: a tall, very narrow gradient. Drawn as a stack of
+  // horizontal slices whose width and alpha both fall off with distance from
+  // the centre, which gives the tapered needle shape rather than a rectangle.
+  for (let i = 0; i < c; i++) {
+    const f = 1 - i / c;
+    const alpha = Math.pow(f, 3.2);
+    const halfWidth = Math.max(0.5, Math.pow(f, 2.2) * 9);
+    ctx.fillStyle = `rgba(214,226,255,${alpha})`;
+    ctx.fillRect(c - halfWidth, c - i, halfWidth * 2, 1);
+    ctx.fillRect(c - halfWidth, c + i, halfWidth * 2, 1);
+  }
+  // Horizontal spike, deliberately shorter and dimmer — matches the reference,
+  // where the vertical dominates.
+  for (let i = 0; i < c * 0.55; i++) {
+    const f = 1 - i / (c * 0.55);
+    const alpha = Math.pow(f, 3.4) * 0.75;
+    const halfHeight = Math.max(0.5, Math.pow(f, 2.2) * 6);
+    ctx.fillStyle = `rgba(206,220,255,${alpha})`;
+    ctx.fillRect(c - i, c - halfHeight, 1, halfHeight * 2);
+    ctx.fillRect(c + i, c - halfHeight, 1, halfHeight * 2);
+  }
+
+  // The blown-out white heart the spikes radiate from.
+  const core = ctx.createRadialGradient(c, c, 0, c, c, S * 0.13);
+  core.addColorStop(0, "rgba(255,255,255,1)");
+  core.addColorStop(0.35, "rgba(226,232,255,0.75)");
+  core.addColorStop(1, "rgba(150,120,255,0)");
+  ctx.fillStyle = core;
+  ctx.fillRect(0, 0, S, S);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  const sprite = new THREE.Sprite(
+    new THREE.SpriteMaterial({ map: tex, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0 })
+  );
+  sprite.name = "bigBangFlare";
+  return sprite;
+}
+
+// ---------- the plasma haze ----------
+// The reference's purple is a thick, cloudy, roiling volume, not a scatter of
+// dots — discrete particles cannot make that however many are used, because
+// what reads as "cloud" is large overlapping soft-edged areas. These are a few
+// dozen big, faint, additive puffs at random orientations, expanding with the
+// shell and slowly counter-rotating so the mass churns rather than sliding
+// rigidly outward.
+const HAZE_COUNT = 54;
+
+function makeHazePuff() {
+  const S = 256;
+  const canvas = document.createElement("canvas");
+  canvas.width = canvas.height = S;
+  const ctx = canvas.getContext("2d");
+  const rand = makeRandom("bigbang-haze-tex");
+
+  // Several offset blobs per puff rather than one clean circle: a single
+  // radial gradient reads as a soft ball, and a ball repeated 54 times still
+  // reads as balls. Overlapping lobes give an irregular edge that reads as
+  // vapour once they intersect each other.
+  ctx.globalCompositeOperation = "lighter";
+  for (let i = 0; i < 9; i++) {
+    const x = S / 2 + (rand() - 0.5) * S * 0.42;
+    const y = S / 2 + (rand() - 0.5) * S * 0.42;
+    const r = S * (0.16 + rand() * 0.26);
+    const g = ctx.createRadialGradient(x, y, 0, x, y, r);
+    g.addColorStop(0, "rgba(168,120,255,0.30)");
+    g.addColorStop(0.45, "rgba(120,80,220,0.14)");
+    g.addColorStop(1, "rgba(70,40,160,0)");
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, S, S);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  return tex;
+}
+
+function buildHaze() {
+  const group = new THREE.Group();
+  group.name = "bigBangHaze";
+  const tex = makeHazePuff();
+  const rand = makeRandom("bigbang-haze");
+
+  for (let i = 0; i < HAZE_COUNT; i++) {
+    const mat = new THREE.SpriteMaterial({
+      map: tex,
+      transparent: true,
+      depthWrite: false,
+      blending: THREE.AdditiveBlending,
+      opacity: 0,
+      rotation: rand() * Math.PI * 2,
+      color: new THREE.Color().setHSL(0.70 + rand() * 0.09, 0.85, 0.5 + rand() * 0.18),
+    });
+    const sprite = new THREE.Sprite(mat);
+    const u = rand() * 2 - 1;
+    const phi = rand() * Math.PI * 2;
+    const s = Math.sqrt(1 - u * u);
+    sprite.userData.dir = new THREE.Vector3(s * Math.cos(phi), u, s * Math.sin(phi));
+    sprite.userData.reach = BIG_BANG_RADIUS * (0.10 + Math.pow(rand(), 0.8) * 0.85);
+    sprite.userData.size = BIG_BANG_RADIUS * (0.20 + rand() * 0.30);
+    sprite.userData.spin = (rand() - 0.5) * 0.22;
     group.add(sprite);
   }
   return group;
@@ -480,6 +620,8 @@ export function buildBigBangContent() {
   const galaxies = buildGalaxies();
   const caption = buildCaption();
   const blindFlash = buildBlindFlash();
+  const flare = makeStarFlare();
+  const haze = buildHaze();
 
   // Two-layer core, same recipe scene/sun.js uses for the corona: a tight
   // bright centre inside a wide soft halo.
@@ -488,8 +630,8 @@ export function buildBigBangContent() {
   coreInner.name = "bigBangCoreInner";
   coreOuter.name = "bigBangCoreOuter";
 
-  group.add(matter, jet, galaxies, caption, coreOuter, coreInner, blindFlash);
-  group.userData = { matter, jet, galaxies, caption, coreInner, coreOuter, blindFlash, elapsed: 0 };
+  group.add(matter, haze, jet, galaxies, caption, coreOuter, coreInner, flare, blindFlash);
+  group.userData = { matter, haze, jet, galaxies, caption, coreInner, coreOuter, flare, blindFlash, elapsed: 0 };
   return group;
 }
 
@@ -520,12 +662,41 @@ export function updateBigBang(scene, delta) {
   const cool = Math.min(1, Math.max(0, (t - 8) / 16));
   d.coreOuter.material.color.setRGB(0.72 + cool * 0.28, 0.55 - cool * 0.34, 1.0 - cool * 0.78);
 
-  // Jet: brightest during inflation, gone by the time galaxies appear.
+  // Jet: brightest during inflation, gone by the time galaxies appear. Kept
+  // faint now that the flare carries the shape — it is the volume the spike
+  // sits inside, not the spike itself.
   const jetLife = t < 3 ? t / 3 : Math.max(0, 1 - (t - 3) / 9);
   d.jet.visible = jetLife > 0.01;
   if (d.jet.visible) {
-    d.jet.children[0].material.opacity = 0.20 * jetLife;
+    d.jet.children[0].material.opacity = 0.12 * jetLife;
     d.jet.scale.setScalar(0.25 + expansion * 0.9);
+  }
+
+  // Star flare: the hard white point with its vertical spike. Follows the
+  // flash envelope but lingers longer, because in the reference the spiked
+  // core is still clearly there while the haze has already faded — and it
+  // shrinks and reddens into the dying ember the sequence ends on.
+  const flareLife = Math.max(0, flash * 0.9 + 0.10 * (1 - Math.min(1, t / LOOP_SECONDS)));
+  d.flare.material.opacity = Math.min(1, flareLife * 1.15);
+  d.flare.scale.setScalar(BIG_BANG_RADIUS * (0.35 + flash * 1.5));
+  d.flare.material.color.setRGB(1.0, 0.92 - cool * 0.45, 1.0 - cool * 0.72);
+
+  // Plasma haze: the thick violet cloud. Arrives as the white-out clears
+  // (it is invisible against the flash anyway), peaks while the shell is
+  // still compact, and is gone by the time galaxies dominate — the same
+  // order the reference runs in.
+  const hazeIn = Math.min(1, Math.max(0, (t - 4.6) / 2.2));
+  const hazeOut = Math.min(1, Math.max(0, (t - 11) / 6));
+  const hazeLife = hazeIn * (1 - hazeOut);
+  d.haze.visible = hazeLife > 0.01;
+  if (d.haze.visible) {
+    d.haze.children.forEach((puff) => {
+      const u = puff.userData;
+      puff.position.copy(u.dir).multiplyScalar(u.reach * expansion);
+      puff.scale.setScalar(u.size * (0.35 + expansion * 1.1));
+      puff.material.opacity = hazeLife * 0.5;
+      puff.material.rotation += u.spin * delta; // churn, so the mass isn't rigid
+    });
   }
 
   // Galaxies fade in through the structure-formation epoch and drift outward
@@ -575,4 +746,11 @@ export function updateBigBang(scene, delta) {
     // Screen-filling white-out at the detonation.
     updateBlindFlash(d.blindFlash, cam, blindAt(t));
   }
+
+  // Driven from the same clock as the visuals, so the roar lands on the
+  // detonation frame rather than drifting against a looping animation the way
+  // a fixed audio clip would.
+  updateBigBangAudio(t, LOOP_SECONDS);
 }
+
+export { stopBigBangAudio };

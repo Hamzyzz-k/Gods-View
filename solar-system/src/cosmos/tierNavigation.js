@@ -3,6 +3,7 @@ import { TIER_DATA, getTierIndex, getTierById, VR_NEAR_PLANE } from "./tierData.
 import { getTierScene } from "./tierScenes.js";
 import { clearFocus } from "../interaction/focus.js";
 import { releaseAll as releaseHeldBodies } from "../xr/scaleGrab.js";
+import { stopBigBangAudio } from "./bigBangAudio.js";
 
 // Per-tier saved view (camera position + OrbitControls target), keyed by
 // tier id — the multi-tier generalization of surface/surfaceMode.js's single
@@ -109,6 +110,11 @@ export function enterTier(targetId) {
   // is parented to the controller, so it would otherwise ride along into a
   // scene where the body it represents doesn't exist.
   releaseHeldBodies();
+
+  // The Big Bang tier's audio bed is driven from its own update, which stops
+  // being called the moment another tier is active — so without this it would
+  // hold its last gain and keep roaring under the Milky Way.
+  stopBigBangAudio();
 
   const targetScene = getTierScene(targetId);
   if (!targetScene) return false;
