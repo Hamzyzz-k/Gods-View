@@ -3,6 +3,7 @@ import { sceneRegistry } from "../assistant/sceneRegistry.js";
 import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
 import { registerPanel } from "./controllerRaycast.js";
 import { isVrSizeCompareOpen } from "./vrSizeComparePanel.js";
+import { isVrLandmarkPanelOpen } from "./vrLandmarkPanel.js";
 
 // ---------- VR control panel ----------
 // The desktop pause/orbit-lines/moons/constellations/mute controls, mirrored
@@ -50,6 +51,13 @@ const BUTTONS_ORBITAL = [
   { domId: "constellationBtn", icon: "STARS", active: () => isBtnActive("constellationBtn") },
   { domId: "issBtn", icon: "ISS" },
   { domId: "vrSizeToggleBtn", icon: "SIZE", active: () => isVrSizeCompareOpen() },
+  // Added after auditing every desktop control against its VR counterpart.
+  // These three had no way to be reached from inside a headset at all: a
+  // player could operate the tour's prev/next/exit strip but never START a
+  // tour, and Align Planets and the landmark picker were desktop-only.
+  { domId: "alignBtn", icon: "ALIGN" },
+  { domId: "startTourBtn", icon: "TOUR", active: () => AppState.tourState !== "idle" },
+  { domId: "vrLandmarkToggleBtn", icon: "PLACE", active: () => isVrLandmarkPanelOpen() },
   VOICE_BTN,
   AMBIENCE_BTN,
 ];
@@ -66,8 +74,20 @@ const BUTTONS_SURFACE = [
   AMBIENCE_BTN,
 ];
 
+// Landmark Mode had NO button set at all, which meant entering a real place
+// in VR was a one-way trip: the orbital set stayed on screen, none of it
+// applied, and #exitLandmarkBtn — the only way out — existed solely in the
+// desktop DOM. Same shape as Surface Mode's set, for the same reason.
+const BUTTONS_LANDMARK = [
+  { domId: "exitLandmarkBtn", icon: "EXIT" },
+  VOICE_BTN,
+  AMBIENCE_BTN,
+];
+
 function currentButtons() {
-  return AppState.mode === "surface" ? BUTTONS_SURFACE : BUTTONS_ORBITAL;
+  if (AppState.mode === "surface") return BUTTONS_SURFACE;
+  if (AppState.mode === "landmark") return BUTTONS_LANDMARK;
+  return BUTTONS_ORBITAL;
 }
 
 // The desktop toggle buttons don't carry an explicit "on/off" CSS class today
@@ -84,21 +104,32 @@ const PADDING = 20;
 const GAP = 14;
 const CELL = 130; // square button, canvas px
 
-// Sized directly from the button geometry above (7 x 130px cells) rather
-// than picked independently of it — canvasWidth/Height are computed from the
-// actual content, so there's no way for the panel to end up too short (or
-// too tall) for its own buttons again. worldWidth is modest on purpose: at
-// FORWARD_Z this spans roughly 24° of horizontal view, a glanceable strip
-// rather than the ~66°-wide bar the original 2.6-unit version worked out to
-// — that was most of the headset's horizontal FOV, which is what "spoils
-// the view" turned out to mean.
+// Laid out as a GRID rather than one long row. The panel's world width is
+// fixed at a comfortable ~24° of horizontal view (see worldWidth below), so
+// every button added to a single row made all of them narrower: at eight
+// buttons each one measured 2.67° across — eight near-identical dark squares
+// in a strip the width of two fingers held at arm's length. That is what
+// "the Size Compare button isn't visible in VR" actually was. It was drawn,
+// wired, and functional; it was just too small to find or reliably hit with
+// a laser held in an unsupported hand.
 //
-// Sized for the LARGER of the two button sets (orbital's 7) so the panel's
-// physical size — and therefore its position/angular size in view — never
-// changes when switching modes; Surface Mode's smaller set is centered
-// within that same fixed width instead (see redrawControlPanel()).
-const CANVAS_W = PADDING * 2 + CELL * BUTTONS_ORBITAL.length + GAP * (BUTTONS_ORBITAL.length - 1);
-const CANVAS_H = PADDING * 2 + CELL;
+// Wrapping to a second row keeps the tuned 24° width while roughly doubling
+// each button's angular size, and leaves headroom for the controls the
+// desktop-vs-VR audit found missing without shrinking anything again.
+const MAX_PER_ROW = 6;
+
+function gridShape(count) {
+  const rows = Math.ceil(count / MAX_PER_ROW);
+  return { rows, cols: Math.min(count, MAX_PER_ROW) };
+}
+
+// Sized for the LARGEST button set so the panel's physical size — and
+// therefore its position and angular size in view — never changes when
+// switching modes; the shorter Surface/Landmark sets are centred within that
+// same fixed size instead (see redrawControlPanel()).
+const MAX_SHAPE = gridShape(BUTTONS_ORBITAL.length);
+const CANVAS_W = PADDING * 2 + CELL * MAX_SHAPE.cols + GAP * (MAX_SHAPE.cols - 1);
+const CANVAS_H = PADDING * 2 + CELL * MAX_SHAPE.rows + GAP * (MAX_SHAPE.rows - 1);
 export const controlPanel = new VRPanel({
   worldWidth: 1.1,
   worldHeight: 1.1 * (CANVAS_H / CANVAS_W),
@@ -144,16 +175,23 @@ export function redrawControlPanel() {
   ctx.stroke();
 
   const buttons = currentButtons();
-  // Centered within the fixed canvas width rather than always starting at
-  // PADDING, so Surface Mode's shorter row doesn't sit flush left with empty
-  // space stranded on the right.
-  const rowWidth = buttons.length * CELL + (buttons.length - 1) * GAP;
-  const startX = (W - rowWidth) / 2;
+  const { rows, cols } = gridShape(buttons.length);
+  // Each row is centred independently within the fixed canvas, so a partly
+  // filled last row sits under the middle of the one above rather than flush
+  // left with empty space stranded beside it. The whole block is centred
+  // vertically too, so the shorter Surface/Landmark sets don't hug the top of
+  // a panel sized for the taller orbital grid.
+  const gridH = rows * CELL + (rows - 1) * GAP;
+  const startY = (H - gridH) / 2;
 
   buttonHitRects.length = 0;
   buttons.forEach((btn, i) => {
-    const x = startX + i * (CELL + GAP);
-    const y = PADDING;
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    const inThisRow = Math.min(cols, buttons.length - row * cols);
+    const rowWidth = inThisRow * CELL + (inThisRow - 1) * GAP;
+    const x = (W - rowWidth) / 2 + col * (CELL + GAP);
+    const y = startY + row * (CELL + GAP);
     drawButton(ctx, x, y, CELL, btn);
     buttonHitRects.push({ domId: btn.domId, x, y, w: CELL, h: CELL });
   });

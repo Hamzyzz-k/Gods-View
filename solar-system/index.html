@@ -149,6 +149,11 @@
   <button id="vrSizeToggleBtn" class="hidden"></button>
   <button id="vrSizePrevBtn" class="hidden"></button>
   <button id="vrSizeNextBtn" class="hidden"></button>
+  <!-- Same contract, for the VR landmark picker (src/xr/vrLandmarkPanel.js).
+       #landmarksBtn isn't reused here because it opens the desktop HTML
+       modal, which doesn't render inside a WebXR session — this one toggles
+       the in-world panel instead. -->
+  <button id="vrLandmarkToggleBtn" class="hidden"></button>
 
   <div id="eventToast">
     <button id="eventToastClose" aria-label="Dismiss notification">&times;</button>

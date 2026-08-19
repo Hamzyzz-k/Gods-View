@@ -102,7 +102,13 @@ function onSelectStart(event) {
   const body = controller.userData.hoveredBody;
 
   if (button) {
-    document.getElementById(button.domId)?.click();
+    // Most VR buttons mirror a real desktop DOM button, so dispatching a
+    // click on it keeps one source of truth for what the control does. A few
+    // have no desktop element to mirror — xr/vrLandmarkPanel.js's rows are
+    // built from data at draw time rather than existing as markup — and those
+    // carry their own onSelect instead.
+    if (button.onSelect) button.onSelect();
+    else document.getElementById(button.domId)?.click();
     // Not every button's click handler mutates its own DOM (see the comment
     // in vrControlPanel.js on which ones don't), so this can't rely solely
     // on a MutationObserver to know something changed.

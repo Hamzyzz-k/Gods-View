@@ -155,6 +155,8 @@ const { initVrScalePanel } = await import("./xr/vrScalePanel.js");
 initVrScalePanel();
 const { initVrSizeComparePanel } = await import("./xr/vrSizeComparePanel.js");
 initVrSizeComparePanel();
+const { initVrLandmarkPanel } = await import("./xr/vrLandmarkPanel.js");
+initVrLandmarkPanel();
 const { initControllerRaycast } = await import("./xr/controllerRaycast.js");
 initControllerRaycast();
 
