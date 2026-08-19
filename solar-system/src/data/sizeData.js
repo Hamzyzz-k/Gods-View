@@ -287,6 +287,16 @@ export function searchSizeEntities(query) {
   );
 }
 
+// Exact name lookup, for callers that already know which body they mean —
+// xr/scaleGrab.js resolves the mesh it just picked up. Case-insensitive
+// because scene mesh names and this table are maintained separately and a
+// casing drift shouldn't silently return "size unknown".
+export function getSizeEntry(name) {
+  if (!name) return null;
+  const n = String(name).toLowerCase();
+  return SIZE_ENTITIES.find((e) => e.name.toLowerCase() === n) || null;
+}
+
 export function getSizeRange() {
   const diameters = SIZE_ENTITIES.map((e) => e.diameterKm);
   return { min: Math.min(...diameters), max: Math.max(...diameters) };

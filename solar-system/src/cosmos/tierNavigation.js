@@ -2,6 +2,7 @@ import { AppState } from "../core/state.js";
 import { TIER_DATA, getTierIndex, getTierById, VR_NEAR_PLANE } from "./tierData.js";
 import { getTierScene } from "./tierScenes.js";
 import { clearFocus } from "../interaction/focus.js";
+import { releaseAll as releaseHeldBodies } from "../xr/scaleGrab.js";
 
 // Per-tier saved view (camera position + OrbitControls target), keyed by
 // tier id — the multi-tier generalization of surface/surfaceMode.js's single
@@ -103,6 +104,11 @@ export function enterTier(targetId) {
   // Same reasoning surface/surfaceMode.js already applies when swapping
   // into a surface scene.
   clearFocus();
+
+  // Anything held in a hand belongs to the tier being left — its miniature
+  // is parented to the controller, so it would otherwise ride along into a
+  // scene where the body it represents doesn't exist.
+  releaseHeldBodies();
 
   const targetScene = getTierScene(targetId);
   if (!targetScene) return false;

@@ -4,6 +4,7 @@ import { runCommand } from "../assistant/runCommand.js";
 import { stopSpeaking } from "../voice/tts.js";
 import { AmbientAudio } from "../audio/ambientAudio.js";
 import { showListening, showHeard, hide as hideVoiceIndicator } from "./vrVoiceIndicator.js";
+import { grabBody, releaseBody } from "./scaleGrab.js";
 
 // ---------- VR push-to-talk ----------
 // Bound to squeeze (grip), not trigger or either thumbstick: trigger already
@@ -16,7 +17,18 @@ import { showListening, showHeard, hide as hideVoiceIndicator } from "./vrVoiceI
 //
 // Both controllers are bound identically (either hand works) rather than
 // locking this to one, since nothing else in this app is hand-specific.
-function onSqueezeStart() {
+function onSqueezeStart(event) {
+  // Squeeze does two jobs, told apart by what the laser is on at the moment
+  // it fires: on a body it picks that body up (xr/scaleGrab.js), on empty
+  // space it is push-to-talk. Rather than move voice to a worse binding —
+  // there isn't one; trigger is select and both sticks are locomotion — the
+  // grab claims the squeeze only when there is something to grab.
+  // controllerRaycast.js has already written this frame's hover onto the
+  // controller, so both features read one source of truth.
+  const controller = event.target;
+  const body = controller?.userData.hoveredBody;
+  if (body && grabBody(controller, body)) return;
+
   if (!speechSupported) return; // Firefox has no SpeechRecognition; fail silent, not console-noisy
   stopSpeaking(); // don't let the assistant's own voice talk over the user
   AmbientAudio.duck(true);
@@ -27,7 +39,11 @@ function onSqueezeStart() {
   });
 }
 
-function onSqueezeEnd() {
+function onSqueezeEnd(event) {
+  // If this squeeze was holding a body, releasing it drops the body and was
+  // never a voice request, so it must not fall through to stopListening().
+  if (releaseBody(event.target)) return;
+
   if (!speechSupported) return;
   stopListening();
   AmbientAudio.duck(false);

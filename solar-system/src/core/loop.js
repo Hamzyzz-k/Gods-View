@@ -14,6 +14,7 @@ import { updateVrTourPanel } from "../xr/vrTourPanel.js";
 import { updateVrScalePanel } from "../xr/vrScalePanel.js";
 import { updateVrSizeComparePanel } from "../xr/vrSizeComparePanel.js";
 import { updateVrLandmarkPanel } from "../xr/vrLandmarkPanel.js";
+import { updateScaleGrab } from "../xr/scaleGrab.js";
 import { updateWalkControls } from "../surface/walkControls.js";
 import { updateSurfaceLocomotion } from "../xr/surfaceLocomotion.js";
 import { updateSkyObjects } from "../surface/skyObjects.js";
@@ -162,6 +163,7 @@ export function animate() {
   updateVrScalePanel();
   updateVrSizeComparePanel();
   updateVrLandmarkPanel();
+  updateScaleGrab();
 
   // Surface Mode. Sky objects (moon orbits) animate regardless of which
   // locomotion scheme is driving the player; walking itself branches on the
