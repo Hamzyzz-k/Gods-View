@@ -80,23 +80,55 @@ function makeGlowSprite(hexColor, scale, opacity) {
   return sprite;
 }
 
-// Builds one black hole: a real clickable Mesh (the event horizon) with the
-// accretion disk and glow as decorative children — the same "Mesh you can
-// click, everything else is a non-clickable child" shape galaxyFactory.js's
-// proxy+Sprite pair and surface/skyObjects.js's neighbour planets already
-// use. Returns the Mesh directly (not a wrapping Group) so callers can drop
-// it straight into registerTierClickables() alongside every other clickable
-// body, unchanged from how they already do it.
+// How much bigger the pickable area is than the event horizon itself.
+//
+// A black hole is drawn almost entirely as glow: the black sphere is the
+// event horizon, but the bright inner halo around it is ~2.4x that radius
+// and the faint outer halo ~9x. Registering the horizon sphere as the
+// clickable meant the visible object was several times larger than the thing
+// you could actually hit — at the Milky Way tier's default view that is a
+// ~30px target inside a ~133px glow, which measured out to a 6.5% hit rate
+// when aiming at the middle of what's on screen. It read as "clicking the
+// black hole does nothing" because it missed nine times out of ten, and a
+// hand-held laser in VR is shakier than a mouse, not steadier.
+//
+// Sized to the bright inner halo rather than the faint outer one: that is
+// the part that reads as the object, and matching the 9x outer glow would
+// hand black holes a grab radius large enough to steal clicks from whatever
+// is parked next to them.
+const PICK_RADIUS_SCALE = 2.6;
+
+// Builds one black hole: an invisible pick proxy sized to the visible glow,
+// with the event horizon, accretion disk and halos as its children — the
+// same "transparent Mesh is the hit area, the visible thing is a child"
+// shape cosmos/galaxyFactory.js already uses for galaxies, and for the same
+// reason (raycastPicking.js tests with recursive=false, so only the
+// top-level entry in the clickables array is ever hit-tested).
+//
+// Returns that proxy so callers can drop it straight into
+// registerTierClickables() alongside every other clickable body, unchanged
+// from how they already do it. `.name` and `.userData.info` live on the
+// proxy because those are what picking and the info panel read.
 export function buildBlackHole(name, meta, info, radius = 40, tiltRad = 0.5) {
-  const geo = new THREE.SphereGeometry(radius, 24, 24);
-  const mat = new THREE.MeshBasicMaterial({ color: 0x000000 });
-  const mesh = new THREE.Mesh(geo, mat);
-  mesh.name = name;
-  mesh.userData.info = { name, meta, info };
+  // Invisible via opacity rather than .visible = false: an invisible object
+  // is skipped by the raycaster entirely, which would defeat the point.
+  const proxy = new THREE.Mesh(
+    new THREE.SphereGeometry(radius * PICK_RADIUS_SCALE, 12, 12),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false })
+  );
+  proxy.name = name;
+  proxy.userData.info = { name, meta, info };
 
-  mesh.add(buildAccretionDisk(radius, tiltRad));
-  mesh.add(makeGlowSprite(0xffb060, radius * 9, 0.35)); // wide, faint ambient glow from the disk
-  mesh.add(makeGlowSprite(0xfff2d0, radius * 2.4, 0.55)); // tighter, brighter glow right at the horizon's edge
+  // The event horizon itself — the actual black sphere, at its true radius.
+  const horizon = new THREE.Mesh(
+    new THREE.SphereGeometry(radius, 24, 24),
+    new THREE.MeshBasicMaterial({ color: 0x000000 })
+  );
+  proxy.add(horizon);
 
-  return mesh;
+  proxy.add(buildAccretionDisk(radius, tiltRad));
+  proxy.add(makeGlowSprite(0xffb060, radius * 9, 0.35)); // wide, faint ambient glow from the disk
+  proxy.add(makeGlowSprite(0xfff2d0, radius * 2.4, 0.55)); // tighter, brighter glow right at the horizon's edge
+
+  return proxy;
 }

@@ -32,6 +32,21 @@ export function activeClickables() {
   return tierClickables.get(AppState.tier) || [];
 }
 
+// Which tier owns this mesh, or null if it isn't registered anywhere. Backs
+// interaction/locate.js's "hop to the right tier before focusing" logic —
+// the registry above is already the authoritative "what lives where" map, so
+// tier ownership is read from it rather than duplicated in a second list
+// that could drift. Tiers are built lazily, so a tier the player has never
+// visited legitimately has no entry yet and returns null; callers that know
+// the tier from static data pass it explicitly instead.
+export function findTierForMesh(mesh) {
+  if (!mesh) return null;
+  for (const [tierId, meshes] of tierClickables) {
+    if (meshes.includes(mesh)) return tierId;
+  }
+  return null;
+}
+
 export function onPointerMove(event) {
   pointer.x = (event.clientX / window.innerWidth) * 2 - 1;
   pointer.y = -(event.clientY / window.innerHeight) * 2 + 1;

@@ -1,9 +1,8 @@
 import { AppState } from "../core/state.js";
 import { GALAXY_DATA } from "../cosmos/galaxyData.js";
 import { LANDMARK_DATA } from "../landmark/landmarkData.js";
-import { getTierById } from "../cosmos/tierData.js";
 import { jumpToTierCinematic, isTierTransitioning } from "../cosmos/tierTransition.js";
-import { focusOnObject } from "../interaction/focus.js";
+import { locateAndFocus } from "../interaction/locate.js";
 import { enterLandmark } from "../landmark/landmarkMode.js";
 
 // ---------- cross-tier entity locator ----------
@@ -98,23 +97,11 @@ export function locateAndShow(text) {
     return `Heading back to the Solar System, then taking you to ${entry.name}.`;
   }
 
-  // galaxy or black hole
-  if (AppState.mode !== "orbital") {
-    return `Can't navigate there while ${AppState.mode === "surface" ? "walking on a surface" : "visiting a landmark"} — exit back to free-roam first.`;
-  }
-  if (AppState.tier === entry.tier) {
-    const obj = AppState.activeScene.getObjectByName(entry.name);
-    if (obj) {
-      focusOnObject(obj);
-      return `Focusing on ${entry.name}.`;
-    }
-    return `Couldn't find ${entry.name} in the current view.`;
-  }
-  const tierLabel = getTierById(entry.tier)?.label || entry.tier;
-  if (!jumpToTierCinematic(entry.tier)) return "Busy with another transition — try again in a moment.";
-  afterTierSettles(() => {
-    const obj = AppState.activeScene.getObjectByName(entry.name);
-    if (obj) focusOnObject(obj);
-  });
-  return `Heading to ${tierLabel} to show you ${entry.name}.`;
+  // galaxy or black hole. The tier hop, the wait for the transition to
+  // settle, and the focus are all interaction/locate.js's job — this file
+  // only resolves *which* entity a phrase refers to. The tier comes from
+  // static data (galaxyData.js) rather than the live clickables registry,
+  // because a tier the player has never visited hasn't been built yet and so
+  // has nothing registered to look up.
+  return locateAndFocus(entry.name, { tier: entry.tier });
 }

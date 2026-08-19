@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
 import { easeInOutCubic } from "../scene/alignmentsAndEclipses.js";
-import { enterTier, canChangeTier } from "./tierNavigation.js";
+import { enterTier, canChangeTier, noteVrDeparture } from "./tierNavigation.js";
 import { TIER_DATA, getTierIndex, getTierById } from "./tierData.js";
 import { showToast } from "../ui/toast.js";
 import { STARFIELD_BASE_SIZE, STARFIELD_NAME } from "../core/starfield.js";
@@ -322,6 +322,11 @@ function beginTransition(targetId) {
 
   if (isVR) {
     const { rig } = AppState;
+    // Report where the player actually is BEFORE the dolly-out shoves the
+    // rig outward — enterTier() runs partway through that dolly, so reading
+    // rig.position there would record the pushed-out point instead. See
+    // noteVrDeparture()'s comment in tierNavigation.js.
+    noteVrDeparture(rig.position);
     active = {
       targetId,
       fromTierId,

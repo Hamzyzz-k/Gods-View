@@ -136,5 +136,14 @@ export function initVrSizeComparePanel() {
 export function updateVrSizeComparePanel() {
   const visible = AppState.xrSession && AppState.sizeCompareOpen;
   sizePanel.mesh.visible = visible;
-  if (visible) redrawSizePanel();
+  if (!visible) return;
+
+  redrawSizePanel();
+  // Tracks the player's live eye height, same as every sibling panel. The
+  // constructor's position.set() above only runs once at module load, when
+  // camera.position.y is still the desktop default rather than anything the
+  // headset has reported — so without this the strip sat at a fixed height
+  // that was wrong for any player whose real eye level differed, and stayed
+  // wrong if they stood up or sat down mid-session.
+  sizePanel.mesh.position.y = AppState.camera.position.y - HEIGHT_BELOW_EYES;
 }

@@ -1,7 +1,7 @@
 import { AppState } from "../core/state.js";
 import { sceneRegistry } from "../assistant/sceneRegistry.js";
 import { issProxyMesh } from "../scene/planetFactory.js";
-import { focusOnObject } from "../interaction/focus.js";
+import { locateAndFocus } from "../interaction/locate.js";
 import { orbitLines } from "../scene/planetFactory.js";
 const { controls } = AppState;
 
@@ -47,5 +47,10 @@ issBtn?.addEventListener("click", () => {
   if (!issProxyMesh) return;
   sceneRegistry.earth?.setVisible(true);
   sceneRegistry.iss?.setVisible(true);
-  focusOnObject(issProxyMesh);
+  // Routed through the tier-aware locator rather than focusing directly: the
+  // ISS only exists in the solar-system scene, so pressing this from any
+  // other tier used to lerp the view toward its coordinates inside a scene
+  // that wasn't being rendered. locateAndFocus() hops tiers first when it
+  // needs to (interaction/locate.js).
+  locateAndFocus(issProxyMesh);
 });
