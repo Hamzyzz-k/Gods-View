@@ -103,6 +103,11 @@
     <div class="row">
       <button id="sizeCompareBtn">Compare Sizes</button>
     </div>
+    <!-- Only shown when signed in (src/auth/accountPanel.js reveals it) —
+         on an open deployment with no backend there is no account to show. -->
+    <div class="row hidden" id="accountRow">
+      <button id="accountBtn">Your account</button>
+    </div>
     <div id="info">Drag to rotate • Scroll to zoom • Click a planet (or the ISS orbiting Earth!) to zoom in &amp; see info • Double-click a planet to land on its surface</div>
   </div>
 
@@ -194,7 +199,23 @@
       <p class="auth-foot">
         No account? Accounts are created by invitation from your institute —
         ask your teacher to invite your school email address.
+        <button type="button" id="instituteRequestToggle" class="linklike">Register an institute</button>
       </p>
+
+      <!-- Public institute request. Posts to request-institute.js, which
+           creates a row with status 'pending' — a pending institute can do
+           nothing at all until a super admin approves it, so this being open
+           to anonymous visitors is a tidying problem at worst, not a way in. -->
+      <form id="instituteRequestForm" class="hidden">
+        <label for="instituteName">Institute name</label>
+        <input type="text" id="instituteName" maxlength="120" required />
+
+        <label for="instituteEmail">Contact email</label>
+        <input type="email" id="instituteEmail" maxlength="254" required />
+
+        <p class="auth-error" id="instituteRequestStatus" role="status"></p>
+        <button type="submit" id="instituteRequestSubmit">Request access</button>
+      </form>
     </div>
   </div>
 
@@ -243,6 +264,21 @@
       <button id="quizClose" aria-label="Close">&times;</button>
       <h3 id="quizTitle">Quick Quiz</h3>
       <div id="quizBody">Loading…</div>
+    </div>
+  </div>
+
+  <!-- Account panel (src/auth/accountPanel.js). One screen, with sections
+       revealed by role: everyone sees their profile and score history, an
+       institute admin also sees their roster and invite tools, a super admin
+       also sees pending institutes. Only ever populated for a signed-in user,
+       and every section's data is fetched through RLS — the role check here
+       decides what to DRAW, never what someone is allowed to read. -->
+  <div id="accountModal">
+    <div id="accountBackdrop"></div>
+    <div id="accountCard" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
+      <button id="accountClose" aria-label="Close">&times;</button>
+      <h3 id="accountTitle">Your account</h3>
+      <div id="accountBody">Loading…</div>
     </div>
   </div>
 

@@ -130,6 +130,7 @@ body.kiosk #eclipseCalModal,
 body.kiosk #infoPanel,
 body.kiosk #agentPanel,
 body.kiosk #tripLogModal,
+body.kiosk #accountModal,
 body.kiosk #quizModal,
 body.kiosk #landmarksModal,
 body.kiosk #sizeCompareBar,
@@ -1555,3 +1556,154 @@ body.kiosk #kioskExitHint {
   line-height: 1.45;
   color: rgba(255, 255, 255, 0.45);
 }
+
+/* ---------- account panel ---------- */
+/* Same modal shell as #quizModal above, widened: it carries lists (rosters,
+   score history) rather than a single question. */
+#accountModal {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: none;
+  align-items: center;
+  justify-content: center;
+}
+#accountModal.visible { display: flex; }
+#accountBackdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.72);
+  backdrop-filter: blur(4px);
+}
+#accountCard {
+  position: relative;
+  z-index: 1;
+  width: min(540px, 92vw);
+  max-height: 84vh;
+  overflow-y: auto;
+  background: rgba(14, 16, 28, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 14px;
+  padding: 20px 22px;
+  color: #e8ecf7;
+  box-shadow: 0 20px 60px rgba(4, 6, 16, 0.6);
+}
+#accountCard h3 {
+  font-size: 16px;
+  margin-bottom: 14px;
+  color: #ffd27a;
+}
+#accountClose {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  background: none;
+  border: none;
+  color: #e8ecf7;
+  font-size: 20px;
+  cursor: pointer;
+}
+
+.account-section {
+  padding-top: 14px;
+  margin-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.09);
+}
+.account-section:first-child {
+  padding-top: 0;
+  margin-top: 0;
+  border-top: none;
+}
+.account-section h4 {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #7ab8ff;
+}
+.account-field {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+.account-field-label { color: rgba(255, 255, 255, 0.55); }
+.account-field-value { color: #e8ecf7; text-align: right; word-break: break-word; }
+.account-hint, .account-empty {
+  margin: 0 0 10px;
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.5);
+}
+.account-status {
+  margin: 8px 0 0;
+  min-height: 1.2em; /* reserved, so the card doesn't jump when a message lands */
+  font-size: 12.5px;
+  color: #7ab8ff;
+}
+
+.account-list { list-style: none; margin: 8px 0 0; padding: 0; }
+.account-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 7px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
+}
+.account-list li:last-child { border-bottom: none; }
+.account-list-main { color: #e8ecf7; word-break: break-word; }
+.account-list-meta { color: rgba(255, 255, 255, 0.45); font-size: 12px; text-align: right; white-space: nowrap; }
+.account-fails .account-list-meta { color: #ff9d9d; white-space: normal; }
+
+.account-textarea {
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  resize: vertical;
+}
+.account-textarea:focus {
+  outline: none;
+  border-color: rgba(122, 184, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(122, 184, 255, 0.18);
+}
+
+.account-primary, .account-signout, .account-mini {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.account-primary {
+  margin-top: 10px;
+  border: 1px solid rgba(122, 184, 255, 0.5);
+  background: rgba(122, 184, 255, 0.18);
+  color: #cfe4ff;
+}
+.account-primary:hover:not(:disabled) { background: rgba(122, 184, 255, 0.28); }
+.account-primary:disabled, .account-mini:disabled { opacity: 0.55; cursor: default; }
+.account-signout {
+  margin-top: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.8);
+}
+.account-signout:hover { border-color: rgba(255, 157, 157, 0.5); color: #ff9d9d; }
+.account-institute { flex-wrap: wrap; }
+.account-institute-main { display: flex; flex-direction: column; gap: 2px; }
+.account-institute-actions { display: flex; gap: 8px; }
+.account-mini {
+  padding: 5px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 12px;
+}
+.account-mini:hover:not(:disabled) { border-color: rgba(122, 184, 255, 0.5); color: #cfe4ff; }

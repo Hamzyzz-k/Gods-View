@@ -133,6 +133,48 @@ function handleBackToLanding() {
   document.dispatchEvent(new CustomEvent("gv:show-landing"));
 }
 
+// ---------- public institute request ----------
+// Lives on the sign-in card because that is where someone without an account
+// actually ends up — a link buried on the landing page would be found by
+// nobody who needed it.
+const REQUEST_ENDPOINT = "/.netlify/functions/request-institute";
+
+function initInstituteRequest() {
+  const toggle = document.getElementById("instituteRequestToggle");
+  const form = document.getElementById("instituteRequestForm");
+  const nameEl = document.getElementById("instituteName");
+  const emailEl = document.getElementById("instituteEmail");
+  const statusEl = document.getElementById("instituteRequestStatus");
+  const submitEl = document.getElementById("instituteRequestSubmit");
+  if (!toggle || !form) return;
+
+  toggle.addEventListener("click", () => {
+    form.classList.toggle("hidden");
+    if (!form.classList.contains("hidden")) nameEl?.focus();
+  });
+
+  form.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    submitEl.disabled = true;
+    statusEl.textContent = "Sending…";
+    try {
+      const res = await fetch(REQUEST_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: nameEl.value.trim(), contactEmail: emailEl.value.trim() }),
+      });
+      const data = await res.json().catch(() => ({}));
+      // The endpoint deliberately answers the same way whether or not that
+      // institute already exists, so there is nothing here to distinguish.
+      statusEl.textContent = data.message || "Request received.";
+      if (res.ok) form.reset();
+    } catch {
+      statusEl.textContent = "Couldn't send that just now — try again shortly.";
+    }
+    submitEl.disabled = false;
+  });
+}
+
 // Captures the enter attempt while the gate is closed. Capture phase and
 // stopImmediatePropagation so main.js's own handler doesn't try to fly to a
 // tier in a scene that hasn't been built yet.
@@ -166,6 +208,7 @@ export async function gateBeforeBoot() {
   form?.addEventListener("submit", handleSignIn);
   forgotBtn?.addEventListener("click", handleForgot);
   backBtn?.addEventListener("click", handleBackToLanding);
+  initInstituteRequest();
 
   // If the landing page is already dismissed when we get here — someone
   // reloaded straight into the app, or arrived on a direct link — there is no

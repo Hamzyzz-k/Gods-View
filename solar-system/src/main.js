@@ -188,6 +188,12 @@ await import("./core/loop.js");
 // triggered mid-session has something coherent to tear down.
 await initSignOut();
 
+// Account panel: profile, score history, and (by role) the institute roster,
+// invite tools and institute approvals. Reveals its own button only when
+// there is actually an account to show.
+const { initAccountPanel } = await import("./auth/accountPanel.js");
+await initAccountPanel();
+
 // If the visitor picked a specific tier on the landing page and then had to
 // sign in first, that choice was captured by the gate rather than lost. Honour
 // it now that there is a scene to fly through.

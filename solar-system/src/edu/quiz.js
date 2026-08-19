@@ -23,6 +23,8 @@ export const QUIZ_QUESTIONS = [
   { q: "What shape is the Whirlpool Galaxy?", options: ["Elliptical", "Irregular", "Spiral", "Ring"], answer: 2 },
 ];
 
+import { startAttempt, recordAnswer, finishAttempt, initQuizPersistence } from "./quizPersistence.js";
+
 let deck = [];
 let current = null;
 let score = { correct: 0, total: 0 };
@@ -75,6 +77,16 @@ function onAnswer(i) {
     if (idx === current.answer) btn.classList.add("quiz-correct");
     else if (idx === i) btn.classList.add("quiz-wrong");
   });
+  // Recorded per answer rather than at the end — the quiz has no natural
+  // finish, so a student who simply closes the tab would otherwise leave no
+  // trace of the questions they did answer. No-op when signed out.
+  recordAnswer({
+    question: current.q,
+    chosen: current.options[i],
+    correct: current.options[current.answer],
+    isCorrect: correct,
+  });
+
   feedback.textContent = correct ? "Correct!" : `Not quite — the answer was "${current.options[current.answer]}".`;
   feedback.classList.add(correct ? "quiz-feedback-correct" : "quiz-feedback-wrong");
   const nextBtn = document.createElement("button");
@@ -87,14 +99,27 @@ function onAnswer(i) {
   body.appendChild(nextBtn);
 }
 
+// One "attempt" is one open-to-close run of the quiz modal. Closing it is the
+// only deliberate way a student ends a session, so that is where the score is
+// finalised; quizPersistence.js separately catches the tab-closed case.
+function closeQuiz() {
+  modal?.classList.remove("visible");
+  finishAttempt(getQuizScore());
+}
+
 export function initQuiz() {
   openBtn?.addEventListener("click", () => {
+    // Fresh score per attempt, so a second run isn't recorded as a
+    // continuation of the first.
+    score = { correct: 0, total: 0 };
+    startAttempt();
     nextQuestion();
     renderQuestion();
     modal?.classList.add("visible");
   });
-  closeBtn?.addEventListener("click", () => modal?.classList.remove("visible"));
-  backdrop?.addEventListener("click", () => modal?.classList.remove("visible"));
+  closeBtn?.addEventListener("click", closeQuiz);
+  backdrop?.addEventListener("click", closeQuiz);
+  initQuizPersistence(getQuizScore);
 }
 
 export function getQuizScore() {
