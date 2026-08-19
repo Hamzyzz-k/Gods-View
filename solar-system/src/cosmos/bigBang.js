@@ -27,7 +27,7 @@ import { AppState } from "../core/state.js";
 // per-frame BufferAttribute uploads. This matters here more than elsewhere:
 // this tier animates continuously, where the others are largely static.
 
-const PARTICLE_COUNT = 60000;
+const PARTICLE_COUNT = 90000;
 const GALAXY_COUNT = 46;
 
 // Radius the shell reaches at full expansion, in scene units. Chosen to sit
@@ -180,9 +180,16 @@ function buildMatter() {
     dir[i * 3 + 1] = u;
     dir[i * 3 + 2] = s * Math.sin(phi);
 
-    // Cubed so most matter trails behind the leading edge — the shell has a
-    // dense interior and a thin bright rim, like a real blast wave.
-    speed[i] = BIG_BANG_RADIUS * (0.18 + Math.pow(rand(), 3) * 0.82);
+    // Spread across the WHOLE radius, with a floor near zero rather than at
+    // 0.18. The cubed distribution used before bunched almost everything at
+    // the slow end, which meant the matter formed a hollow shell with its
+    // inner wall at ~1,620 units — so the blast swept past a player standing
+    // at ~620 in about two seconds and then left them alone in an empty
+    // cavity, watching it recede. An exponent below 1 still weights the
+    // leading edge outward (there is a visible front) while leaving matter at
+    // every distance, including inside and around the player, for the whole
+    // sequence. Being in among it is the point, so nowhere should be empty.
+    speed[i] = BIG_BANG_RADIUS * (0.015 + Math.pow(rand(), 0.75) * 0.985);
     size[i] = 1.2 + Math.pow(rand(), 3) * 5.0;
 
     // Faster matter is "younger"/hotter at the front, cooler behind — a cheap
@@ -342,6 +349,77 @@ function buildGalaxies() {
   return group;
 }
 
+// ---------- the blind-out ----------
+// The reference goes completely, featurelessly white for two full seconds at
+// peak — not "bright particles", an actual wall of light with no structure in
+// it at all. Reproducing that needs something covering the entire field of
+// view, which particles and a glow sprite cannot do however bright they get.
+//
+// A plane held just in front of the camera, inside the tier's own scene
+// rather than parented to the camera itself. Camera-parenting would be
+// simpler but the camera outlives this tier, so the flash would have to be
+// explicitly torn down on exit or it would follow the player into the Milky
+// Way; living in the scene means it leaves when the scene does.
+//
+// depthTest off and a high renderOrder so it draws over everything regardless
+// of what it happens to be intersecting.
+function buildBlindFlash() {
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(1, 1),
+    new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      transparent: true,
+      opacity: 0,
+      depthTest: false,
+      depthWrite: false,
+      side: THREE.DoubleSide,
+      toneMapped: false, // full white, not tone-mapped down to grey
+    })
+  );
+  mesh.name = "bigBangBlindFlash";
+  mesh.frustumCulled = false;
+  mesh.renderOrder = 9999;
+  mesh.visible = false;
+  return mesh;
+}
+
+// How blinding it gets, and when. Sharper and later than the particle glow:
+// the screen only whites out around the detonation itself, so the singularity
+// before it and the galaxies after it are never washed out.
+function blindAt(t) {
+  if (t < 2.6) return 0;
+  if (t < 3.6) return Math.pow((t - 2.6) / 1.0, 2) * 0.97; // ramp in fast
+  if (t < 5.4) return 0.97; // the wall of light
+  if (t < 8.2) return Math.max(0, 0.97 * (1 - (t - 5.4) / 2.8)); // long bleed-out
+  return 0;
+}
+
+const _camQuat = new THREE.Quaternion();
+const _flashOffset = new THREE.Vector3();
+
+function updateBlindFlash(mesh, cam, amount) {
+  // Written even when hidden, so the material never holds a stale opacity
+  // from the last frame it was visible.
+  mesh.material.opacity = amount;
+  mesh.visible = amount > 0.002;
+  if (!mesh.visible) return;
+
+  cam.getWorldQuaternion(_camQuat);
+  // Just beyond the near plane, whatever that currently is — this tier uses a
+  // different near in VR (0.1) than on desktop (5), so a hardcoded distance
+  // would be clipped away in one of the two.
+  const d = Math.max(cam.near * 2.5, 0.4);
+  mesh.position.copy(_camPos).add(_flashOffset.set(0, 0, -d).applyQuaternion(_camQuat));
+  mesh.quaternion.copy(_camQuat);
+
+  // Oversized on purpose. In VR each eye has its own off-axis projection that
+  // camera.fov doesn't describe, so sizing exactly to the desktop frustum
+  // would leave the edges of a headset's view uncovered — and a blind-out with
+  // visible corners is worse than none.
+  const height = 2 * Math.tan(THREE.MathUtils.degToRad(cam.fov) / 2) * d * 2.4;
+  mesh.scale.set(height * Math.max(cam.aspect, 1) * 1.4, height, 1);
+}
+
 // ---------- in-world caption ----------
 // Deliberately scene geometry rather than DOM: the DOM does not render inside
 // a WebXR session, and this text is the honesty disclaimer the brief requires
@@ -401,6 +479,7 @@ export function buildBigBangContent() {
   const jet = buildJet();
   const galaxies = buildGalaxies();
   const caption = buildCaption();
+  const blindFlash = buildBlindFlash();
 
   // Two-layer core, same recipe scene/sun.js uses for the corona: a tight
   // bright centre inside a wide soft halo.
@@ -409,8 +488,8 @@ export function buildBigBangContent() {
   coreInner.name = "bigBangCoreInner";
   coreOuter.name = "bigBangCoreOuter";
 
-  group.add(matter, jet, galaxies, caption, coreOuter, coreInner);
-  group.userData = { matter, jet, galaxies, caption, coreInner, coreOuter, elapsed: 0 };
+  group.add(matter, jet, galaxies, caption, coreOuter, coreInner, blindFlash);
+  group.userData = { matter, jet, galaxies, caption, coreInner, coreOuter, blindFlash, elapsed: 0 };
   return group;
 }
 
@@ -477,12 +556,23 @@ export function updateBigBang(scene, delta) {
     // getWorldPosition, not .position: in VR the camera is a child of the rig
     // and its local position is a head offset, not a world location.
     cam.getWorldPosition(_camPos);
-    // Held at a fixed fraction of the way from the player toward the origin,
-    // so it stays legible whether they are at the core or far outside the
-    // shell — a caption pinned in world space would be a speck from the edge.
-    const dist = Math.max(BIG_BANG_RADIUS * 0.12, _camPos.length() * 0.35);
-    d.caption.position.set(0, -dist * 0.42, 0).addScaledVector(_camPos.clone().normalize(), dist);
-    d.caption.scale.setScalar(Math.max(0.25, dist / (BIG_BANG_RADIUS * 0.55)));
+
+    const camDist = _camPos.length();
+    // Placed BETWEEN the player and the origin, at a fraction of however far
+    // out they are. The previous version put it at a distance derived from the
+    // shell radius, which was further out than the player now starts — so from
+    // inside the blast the caption sat behind them, permanently unread.
+    // Sitting inboard means it is always in view when facing the core, which
+    // is where the sequence is happening.
+    const dist = Math.max(120, camDist * 0.45);
+    if (camDist > 1e-3) {
+      d.caption.position.copy(_camPos).setLength(dist);
+      d.caption.position.y -= dist * 0.38; // below the core, not across it
+    }
+    d.caption.scale.setScalar(Math.max(0.12, dist / (BIG_BANG_RADIUS * 0.55)));
     d.caption.lookAt(_camPos);
+
+    // Screen-filling white-out at the detonation.
+    updateBlindFlash(d.blindFlash, cam, blindAt(t));
   }
 }

@@ -167,7 +167,12 @@ export const TIER_DATA = [
     // zooming out" honestly ends: past the observable universe there is no
     // more space to see, only earlier time.
     journey: { kind: "time", label: "13.8 billion years ago", caption: "Looking back in time, not further out in space" },
-    defaultView: { cameraPos: [0, 3200, 7200], target: [0, 0, 0] },
+    // Deliberately INSIDE the blast, not outside watching it. At 7,200 units
+    // out the whole event happened in front of the player like a firework;
+    // sitting ~620 units from the origin puts them within the expanding shell,
+    // so the matter front reaches them seconds in and then keeps going past
+    // them for the rest of the sequence. Being surrounded is the point.
+    defaultView: { cameraPos: [0, 150, 600], target: [0, 0, 0] },
     cameraNear: 5,
     cameraFar: BIG_BANG_RADIUS * 8,
     controlsMax: BIG_BANG_RADIUS * 2.4,
