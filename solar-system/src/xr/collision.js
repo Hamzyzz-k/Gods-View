@@ -52,6 +52,12 @@ const DEFLECT_MARGIN = 0.4;
 // smaller problem than clipping through a planet.
 const MAX_STEP_PER_FRAME = 0.35;
 
+// Ceiling on how many collision-resolved substeps one frame may be split into
+// (see resolveAndApplyMovement). 24 covers the fastest selectable flight
+// speed with room to spare — 8x at 72Hz needs about 6 — while bounding the
+// worst-case cost of a single frame after a long stall.
+const MAX_SUBSTEPS = 24;
+
 const MAX_PUSH_PER_FRAME = 2.0; // clamp so the spring can't overshoot past the surface and start oscillating
 const SPRING_STRENGTH = 6.0; // correction rate, per second
 const SPRING_PASSES = 2; // re-check after correcting, so fixing one overlap doesn't reintroduce another (e.g. a planet and its moon sitting close together)
@@ -94,6 +100,7 @@ function buildCollidables() {
 const _bodyPos = new THREE.Vector3();
 const _normal = new THREE.Vector3();
 const _delta = new THREE.Vector3();
+const _substep = new THREE.Vector3();
 
 // Called once per frame from locomotion.js with the movement the thumbsticks
 // intend for this frame, BEFORE it has been applied to the rig. Mutates
@@ -106,6 +113,39 @@ const _delta = new THREE.Vector3();
 // here too since the spring pass is framerate-scaled independently of it.
 export function resolveAndApplyMovement(intendedDelta, dt) {
   if (!collidables) collidables = buildCollidables();
+
+  // A frame that wants to travel further than MAX_STEP_PER_FRAME is split
+  // into several short steps rather than simply truncated.
+  //
+  // Truncating was correct while the only thing feeding this was thumbstick
+  // flight at a fixed speed, where the clamp was documented as engaging only
+  // during a frame-time spike. It stopped being correct once movement speed
+  // became adjustable (core/moveSpeed.js): at 8x a single 72Hz frame asks to
+  // move about 2.0 units, and clamping that to 0.35 silently capped the top
+  // speed at roughly 1.4x no matter what the player selected. Hand pinch-drag
+  // (xr/locomotion.js) can ask for a large delta in one frame too.
+  //
+  // Substepping keeps the anti-tunneling guarantee intact rather than trading
+  // it away for speed: the guarantee comes from each resolved step being
+  // shorter than DEFLECT_MARGIN, and every substep still is. The step count is
+  // capped so a pathological delta can't stall a frame — at that cap the old
+  // truncating behaviour returns, which is the safe way to fail.
+  const length = intendedDelta.length();
+  if (length <= MAX_STEP_PER_FRAME) {
+    resolveStep(intendedDelta, dt);
+    return;
+  }
+  const steps = Math.min(MAX_SUBSTEPS, Math.ceil(length / MAX_STEP_PER_FRAME));
+  _substep.copy(intendedDelta).divideScalar(steps);
+  const subDt = dt / steps;
+  for (let i = 0; i < steps; i++) resolveStep(_substep, subDt);
+}
+
+// One collision-resolved movement step, guaranteed shorter than
+// DEFLECT_MARGIN. Split out of resolveAndApplyMovement() so substepping can
+// reuse it unchanged — the deflection and spring logic below is exactly what
+// it always was.
+function resolveStep(intendedDelta, dt) {
   const { rig } = AppState;
 
   // ---- pass 1: deflect using where the player is RIGHT NOW, then move ----

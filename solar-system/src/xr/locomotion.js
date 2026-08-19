@@ -46,6 +46,44 @@ const _right = new THREE.Vector3();
 // component that was resolved against a different pass entirely.
 const _moveDelta = new THREE.Vector3();
 
+// ---------- hand tracking ----------
+// Hands report no gamepad, so the thumbstick scheme above simply has nothing
+// to read and free-flight would be dead on a headset running hand tracking.
+// The replacement is direct manipulation: pinch on empty space and move your
+// hand, and the rig moves the opposite way, as though you had taken hold of
+// the world and pulled it past you. Chosen over a "point and pinch to glide"
+// scheme because it is self-explanatory without instruction — which is the
+// stated reason for wanting hand tracking at all (younger users, classroom
+// demos, nobody learning a gamepad first).
+//
+// HAND_DRAG_GAIN turns a hand movement of a few centimetres into useful
+// travel. It is multiplied by the shared flight-speed setting as well, so the
+// same SLOW/FAST control covers both input methods rather than hands needing
+// their own.
+const HAND_DRAG_GAIN = 26;
+const _dragNow = new THREE.Vector3();
+const _dragDelta = new THREE.Vector3();
+
+export function isHandTrackingActive() {
+  return !!(leftController?.userData.isHand || rightController?.userData.isHand);
+}
+
+// Accumulates this frame's grab-drag from either hand into `out`. Both hands
+// may drag at once; their contributions sum, which makes a two-handed pull
+// simply twice as strong rather than a special gesture with its own rules.
+function updateHandDrag(out, dt) {
+  for (const controller of [leftController, rightController]) {
+    if (!controller?.userData.dragging || !controller.userData.dragPrev) continue;
+    controller.getWorldPosition(_dragNow);
+    _dragDelta.subVectors(controller.userData.dragPrev, _dragNow); // reversed: the WORLD moves with the hand, so the rig moves against it
+    controller.userData.dragPrev.copy(_dragNow);
+    // dt-independent by construction: this is a positional delta already, not
+    // a velocity, so scaling it by dt would make the same hand movement travel
+    // different distances at different frame rates.
+    out.addScaledVector(_dragDelta, HAND_DRAG_GAIN * getMoveSpeed());
+  }
+}
+
 // Called once at startup (from main.js, after the rig exists). Acquiring
 // XRTargetRaySpace objects does not require an active session — they simply
 // stay empty (no gamepad, no pose) until one starts. Handedness is only known
@@ -62,6 +100,14 @@ export function initLocomotion() {
     controller.addEventListener("connected", (event) => {
       controller.userData.handedness = event.data.handedness;
       controller.userData.gamepad = event.data.gamepad;
+      // XRInputSource.hand is present only for a tracked HAND rather than a
+      // held controller. Both arrive through this same event and both drive
+      // the same XRTargetRaySpace, which is why hand input needs no parallel
+      // system for pointing: three.js's getController(i) already carries the
+      // hand's aim ray, and a pinch already fires the same selectstart the
+      // trigger does (xr/controllerRaycast.js). Only locomotion differs, so
+      // only locomotion is special-cased — see updateHandDrag() below.
+      controller.userData.isHand = !!event.data.hand;
       if (event.data.handedness === "left") leftController = controller;
       else if (event.data.handedness === "right") rightController = controller;
     });
@@ -70,6 +116,28 @@ export function initLocomotion() {
       if (controller === rightController) rightController = null;
       controller.userData.handedness = null;
       controller.userData.gamepad = null;
+      controller.userData.isHand = false;
+      controller.userData.dragging = false;
+    });
+
+    // Pinch-to-drag, hands only. A pinch that starts while the laser is over
+    // a panel button or a body is a SELECT and must stay one — that is how
+    // every control in VR is operated. A pinch that starts pointing at
+    // nothing has no other meaning, so it becomes a grab on space itself:
+    // close, pull, and the universe comes with you. controllerRaycast.js has
+    // already written this frame's hover state onto the same controller, so
+    // the two readings can't disagree.
+    controller.addEventListener("selectstart", () => {
+      if (!controller.userData.isHand) return;
+      if (controller.userData.hoveredButton || controller.userData.hoveredBody) return;
+      controller.userData.dragging = true;
+      // Per-controller, not a shared scratch vector: both hands can be
+      // dragging at once, and a shared "previous position" would have each
+      // hand reading the other's last frame and yanking the rig sideways.
+      controller.userData.dragPrev = controller.getWorldPosition(new THREE.Vector3());
+    });
+    controller.addEventListener("selectend", () => {
+      controller.userData.dragging = false;
     });
     // Parented to the rig, not the scene: the controller's world transform
     // must compose with rig movement so a laser pointer (Phase 8) drawn from
@@ -146,6 +214,12 @@ export function updateLocomotion(dt) {
       }
     }
   }
+
+  // Hand pinch-drag folds into the SAME delta the thumbsticks write to, so it
+  // goes through the same collision resolution below rather than teleporting
+  // the rig through a planet. A headset with one controller and one tracked
+  // hand therefore works too: each contributes whatever it can.
+  updateHandDrag(_moveDelta, dt);
 
   if (_moveDelta.lengthSq() > 0) resolveAndApplyMovement(_moveDelta, dt);
 }
