@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
 import { getMoveSpeed } from "../core/moveSpeed.js";
+import { getTierById } from "../cosmos/tierData.js";
 import { resolveAndApplyMovement } from "./collision.js";
 
 // ---------- VR free-flight locomotion ----------
@@ -46,6 +47,30 @@ const _right = new THREE.Vector3();
 // component that was resolved against a different pass entirely.
 const _moveDelta = new THREE.Vector3();
 
+// ---------- scale movement to the tier ----------
+// MOVE_SPEED is tuned for the solar system, where Sun-to-Pluto is about 88
+// units. Every outer tier is orders of magnitude larger and was using the
+// same number: inside the Big Bang, whose shell is 9,000 units across, full
+// stick at 1x covered it in 500 seconds. Movement technically worked, but at
+// that rate nothing visibly changes, which reads as being unable to move at
+// all rather than as moving slowly.
+//
+// The factor comes from each tier's own controlsMax — the zoom ceiling it
+// already declares, which is the closest thing the data has to "how big is
+// this place". Deriving it means a tier added later is correct without anyone
+// remembering to tune a second constant.
+//
+// TURNING IS DELIBERATELY NOT SCALED. Rotation is angular: 75 degrees per
+// second is right whether you are beside a moon or inside a forming universe,
+// and multiplying it by 27 would make the Big Bang tier unusable, not faster.
+const BASE_CONTROLS_MAX = 800; // the solar system tier's own value
+
+function tierMoveScale() {
+  const tier = getTierById(AppState.tier);
+  if (!tier?.controlsMax) return 1;
+  return Math.max(1, tier.controlsMax / BASE_CONTROLS_MAX);
+}
+
 // ---------- hand tracking ----------
 // Hands report no gamepad, so the thumbstick scheme above simply has nothing
 // to read and free-flight would be dead on a headset running hand tracking.
@@ -80,7 +105,7 @@ function updateHandDrag(out, dt) {
     // dt-independent by construction: this is a positional delta already, not
     // a velocity, so scaling it by dt would make the same hand movement travel
     // different distances at different frame rates.
-    out.addScaledVector(_dragDelta, HAND_DRAG_GAIN * getMoveSpeed());
+    out.addScaledVector(_dragDelta, HAND_DRAG_GAIN * getMoveSpeed() * tierMoveScale());
   }
 }
 
@@ -184,7 +209,7 @@ export function updateLocomotion(dt) {
       // getMoveSpeed() scales every axis by the same player-set factor, so
       // the tuned relationship between forward, vertical and turn rates is
       // preserved rather than replaced. See core/moveSpeed.js.
-      const move = MOVE_SPEED * getMoveSpeed();
+      const move = MOVE_SPEED * getMoveSpeed() * tierMoveScale();
       _moveDelta.addScaledVector(_forward, -y * move * dt).addScaledVector(_right, x * move * dt);
     }
   }
@@ -197,7 +222,7 @@ export function updateLocomotion(dt) {
       // staying tied to gravity's usual "up" is far less disorienting than
       // having it swing around with head tilt. Folded into the same delta as
       // the horizontal move above so collision resolves both together.
-      _moveDelta.y += -y * VERTICAL_SPEED * getMoveSpeed() * dt;
+      _moveDelta.y += -y * VERTICAL_SPEED * getMoveSpeed() * tierMoveScale() * dt;
     }
 
     if (x !== 0) {
@@ -221,5 +246,16 @@ export function updateLocomotion(dt) {
   // hand therefore works too: each contributes whatever it can.
   updateHandDrag(_moveDelta, dt);
 
-  if (_moveDelta.lengthSq() > 0) resolveAndApplyMovement(_moveDelta, dt);
+  if (_moveDelta.lengthSq() === 0) return;
+
+  // Collision is only meaningful in the solar system: xr/collision.js builds
+  // its collider list from the Sun, planets and moons, and nothing else in the
+  // app is in it. Running it elsewhere achieved nothing except cost -- and,
+  // once tier scaling above made movement fast, actively capped it: the
+  // anti-tunneling substep limit trims any frame asking for more than about
+  // 8 units, which at Big Bang speeds is most of them. Skipping it outside
+  // the tier it protects is both correct and what lets the outer tiers move
+  // at their own scale.
+  if (AppState.tier === "solarSystem") resolveAndApplyMovement(_moveDelta, dt);
+  else rig.position.add(_moveDelta);
 }
