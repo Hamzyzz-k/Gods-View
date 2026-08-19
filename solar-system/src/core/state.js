@@ -28,6 +28,10 @@ export const AppState = {
   // Simulation controls
   paused: false,
   speedMultiplier: 1,
+  // How fast the PLAYER moves, as a multiplier on every locomotion scheme's
+  // own tuned constants. Owned by core/moveSpeed.js — separate from
+  // speedMultiplier above, which is how fast the WORLD runs. See that file.
+  moveSpeedMultiplier: 1,
   orbitLinesVisible: true,
 
   // Focus/camera targeting

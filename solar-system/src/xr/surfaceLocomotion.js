@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
+import { getMoveSpeed } from "../core/moveSpeed.js";
 import { EYE_HEIGHT, addLocomotionHooks } from "../surface/surfaceMode.js";
 import { playFootstep } from "../surface/footsteps.js";
 
@@ -115,7 +116,8 @@ export function updateSurfaceLocomotion(dt) {
       _right.y = 0;
       if (_right.lengthSq() > 1e-8) _right.normalize();
 
-      _move.set(0, 0, 0).addScaledVector(_forward, -y * WALK_SPEED * dt).addScaledVector(_right, x * WALK_SPEED * dt);
+      const walk = WALK_SPEED * getMoveSpeed();
+      _move.set(0, 0, 0).addScaledVector(_forward, -y * walk * dt).addScaledVector(_right, x * walk * dt);
       rig.position.add(_move);
 
       const r = Math.hypot(rig.position.x, rig.position.z);
@@ -135,7 +137,7 @@ export function updateSurfaceLocomotion(dt) {
 
   if (rightController?.userData?.gamepad) {
     const { x } = readStickAxes(rightController.userData.gamepad);
-    if (x !== 0) rig.rotation.y -= x * TURN_SPEED_RAD_PER_SEC * dt;
+    if (x !== 0) rig.rotation.y -= x * TURN_SPEED_RAD_PER_SEC * getMoveSpeed() * dt;
   }
 
   verticalVelocity -= BASE_GRAVITY * gravityMultiplier * dt;

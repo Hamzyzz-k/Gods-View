@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { AppState } from "../core/state.js";
+import { getMoveSpeed } from "../core/moveSpeed.js";
 import { resolveAndApplyMovement } from "./collision.js";
 
 // ---------- VR free-flight locomotion ----------
@@ -112,7 +113,11 @@ export function updateLocomotion(dt) {
 
       // Gamepad Y is negative when the stick is pushed forward/up — standard
       // joystick convention, flip here if a real controller reads backwards.
-      _moveDelta.addScaledVector(_forward, -y * MOVE_SPEED * dt).addScaledVector(_right, x * MOVE_SPEED * dt);
+      // getMoveSpeed() scales every axis by the same player-set factor, so
+      // the tuned relationship between forward, vertical and turn rates is
+      // preserved rather than replaced. See core/moveSpeed.js.
+      const move = MOVE_SPEED * getMoveSpeed();
+      _moveDelta.addScaledVector(_forward, -y * move * dt).addScaledVector(_right, x * move * dt);
     }
   }
 
@@ -124,7 +129,7 @@ export function updateLocomotion(dt) {
       // staying tied to gravity's usual "up" is far less disorienting than
       // having it swing around with head tilt. Folded into the same delta as
       // the horizontal move above so collision resolves both together.
-      _moveDelta.y += -y * VERTICAL_SPEED * dt;
+      _moveDelta.y += -y * VERTICAL_SPEED * getMoveSpeed() * dt;
     }
 
     if (x !== 0) {
@@ -137,7 +142,7 @@ export function updateLocomotion(dt) {
           lastSnapTime = now;
         }
       } else {
-        rig.rotation.y -= x * TURN_SPEED_RAD_PER_SEC * dt;
+        rig.rotation.y -= x * TURN_SPEED_RAD_PER_SEC * getMoveSpeed() * dt;
       }
     }
   }

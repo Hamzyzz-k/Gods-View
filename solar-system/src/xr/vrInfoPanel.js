@@ -1,4 +1,3 @@
-import * as THREE from "three";
 import { AppState } from "../core/state.js";
 import { infoPanel, infoName, infoMeta, infoDesc, infoCredit } from "../ui/infoPanel.js";
 import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
@@ -18,10 +17,47 @@ import { registerPanel } from "./controllerRaycast.js";
 // fact chips once they arrive. Whenever that DOM changes, this redraws from
 // whatever is actually in it right now — one source of content, two
 // renderers.
-export const infoVrPanel = new VRPanel({ worldWidth: 2.0, worldHeight: 1.3, canvasWidth: 1024 });
+// Rig-parented HUD rather than world-anchored beside the focused body. The
+// old placement floated the panel next to whatever you had selected, which
+// read well while you were still next to it and became useless the moment you
+// flew anywhere — the text you wanted was back at the planet you just left.
+// Parented to the rig it travels with you and stays readable from anywhere,
+// the same "console mounted in front of the player" treatment
+// xr/vrControlPanel.js documents at length.
+//
+// Sized deliberately smaller than the old world-anchored version (2.0 x 1.3).
+// At FORWARD_Z that would have spanned ~42 degrees of horizontal view — the
+// exact mistake the control panel was already corrected for once, when a
+// 66-degree bar turned out to be what "the panel spoils the view" meant.
+// 1.2 wide is ~26 degrees, and it sits off to the left rather than dead
+// ahead, so it's a glance rather than an obstruction.
+const FORWARD_Z = -2.6; // matches every other rig-parented panel
+const SIDE_X = -1.2; // left of centre, clear of the control panel's own ±0.55
+const HEIGHT_ABOVE_EYES = 0.35;
+
+const CANVAS_W = 1024;
+const CANVAS_H = 666;
+export const infoVrPanel = new VRPanel({
+  worldWidth: 1.2,
+  worldHeight: 1.2 * (CANVAS_H / CANVAS_W),
+  canvasWidth: CANVAS_W,
+  canvasHeight: CANVAS_H,
+});
 infoVrPanel.mesh.name = "vrInfoPanel";
 
 const PADDING = 40;
+
+// Which target the player explicitly dismissed the panel for. Tracked by
+// object rather than as a plain boolean because the brief is specific: the
+// panel must be dismissable while something is STILL focused, and must come
+// back on its own when a different body is selected. A boolean cleared by
+// focusedTarget going null would fail the first half; never clearing it would
+// fail the second.
+let dismissedFor = null;
+
+export function dismissVrInfoPanel() {
+  dismissedFor = AppState.focusedTarget;
+}
 
 // Consumed by xr/controllerRaycast.js's panel registry. VR has no double-
 // click gesture (the desktop landing trigger — interaction/raycastPicking.js),
@@ -60,12 +96,37 @@ function redraw() {
   ctx.lineWidth = 3;
   ctx.stroke();
 
+  infoPanelHitRects.length = 0;
+
   let y = PADDING + 20;
+
+  // Close button, top-right. Same role as the desktop panel's own #infoClose,
+  // but it can't just mirror that button: #infoClose calls clearFocus(),
+  // which unfocuses the body entirely, and the brief asks for a dismiss that
+  // leaves the current focus intact. So this carries its own onSelect.
+  const closeSize = 52;
+  const closeX = W - PADDING - closeSize;
+  const closeY = PADDING - 12;
+  roundRect(ctx, closeX, closeY, closeSize, closeSize, 12);
+  ctx.fillStyle = COLORS.pillBg;
+  ctx.fill();
+  ctx.strokeStyle = COLORS.pillBorder;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.font = "30px sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = COLORS.textDim;
+  ctx.fillText("×", closeX + closeSize / 2, closeY + closeSize / 2 + 1);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+  infoPanelHitRects.push({ x: closeX, y: closeY, w: closeSize, h: closeSize, onSelect: dismissVrInfoPanel });
 
   ctx.font = "bold 56px sans-serif";
   ctx.textAlign = "left";
   ctx.fillStyle = COLORS.gold;
-  ctx.fillText(infoName.textContent || "", PADDING, y);
+  // Stop the title running under the close button.
+  ctx.fillText(infoName.textContent || "", PADDING, y, W - PADDING * 2 - closeSize - 16);
   y += 60;
 
   // Meta chips (Object -> "<span>k: v</span>" pairs) — drawn as small pills
@@ -107,7 +168,6 @@ function redraw() {
   // at a fixed distance from the bottom edge (not stacked under the
   // variable-height description above) so its position is predictable
   // regardless of how much text just wrapped above it.
-  infoPanelHitRects.length = 0;
   if (getSurfaceData(infoName.textContent)) {
     const btnH = 64;
     const btnY = H - 108;
@@ -137,7 +197,14 @@ function redraw() {
 }
 
 export function initVrInfoPanel() {
-  AppState.scene.add(infoVrPanel.mesh); // world-anchored, so it's a scene child, not the rig's
+  // Rig-parented, like every other VR panel. This also removes the
+  // self-healing reparent the world-anchored version needed every frame: the
+  // rig is itself moved into whichever scene is active
+  // (cosmos/tierNavigation.js, surface/surfaceMode.js), so its children come
+  // along automatically and can never be left behind in a scene that is no
+  // longer being rendered.
+  AppState.rig.add(infoVrPanel.mesh);
+  infoVrPanel.mesh.position.set(SIDE_X, HEIGHT_ABOVE_EYES, FORWARD_Z);
   redraw();
   const observer = new MutationObserver(redraw);
   observer.observe(infoPanel, { childList: true, subtree: true, characterData: true });
@@ -152,55 +219,29 @@ export function initVrInfoPanel() {
   });
 }
 
-// Scratch objects, reused every frame.
-const _targetPos = new THREE.Vector3();
-const _offset = new THREE.Vector3();
-const _camPos = new THREE.Vector3();
-
-// Called once per frame, VR only. World-anchored near the focused body
-// (offset by its radius so it doesn't clip into the surface) rather than
-// locked to the camera: a panel that only rotates to face the player, but
-// doesn't translate with them, is the billboarded-object pattern the brief
-// calls for, and avoids the "always pinned in your peripheral vision"
-// discomfort of a head-locked panel — reserved here for the small control
-// bar instead, which needs to be reachable from anywhere.
+// Called once per frame, VR only. No billboarding and no world anchoring
+// anymore: as a rig child the panel already turns with the player (rig yaw)
+// and travels with them, so it faces them by construction. PlaneGeometry's
+// front face points toward +Z, and the panel sits at local -Z from the rig
+// with no rotation, so that face is already looking back at the player —
+// the same reasoning vrControlPanel.js documents for its own placement.
 export function updateVrInfoPanel() {
-  // World-anchored panels only stay visible for as long as they remain a
-  // child of whatever scene is actually being rendered. initVrInfoPanel()
-  // parents this to AppState.scene once at startup, which is correct only
-  // until the active scene changes (Surface Mode, or a tier change —
-  // cosmos/tierNavigation.js). Self-healing here, rather than every
-  // navigation call site remembering to move it, means this can never drift
-  // out of sync with whatever AppState.activeScene actually is this frame.
-  // Object3D.add() on an already-parented object removes it from its old
-  // parent first, so this is safe and idempotent to run every frame.
-  if (infoVrPanel.mesh.parent !== AppState.activeScene) AppState.activeScene.add(infoVrPanel.mesh);
-
   const target = AppState.focusedTarget;
-  const shouldShow = AppState.xrSession && target && infoPanel.classList.contains("visible");
+
+  // A newly focused body clears any earlier dismissal, so closing the panel
+  // for one planet doesn't silently suppress it for every planet after.
+  if (target && dismissedFor && target !== dismissedFor) dismissedFor = null;
+
+  const shouldShow =
+    AppState.xrSession &&
+    target &&
+    target !== dismissedFor &&
+    infoPanel.classList.contains("visible");
+
   infoVrPanel.mesh.visible = !!shouldShow;
   if (!shouldShow) return;
 
-  target.getWorldPosition(_targetPos);
-  target.geometry.computeBoundingSphere();
-  const r = target.geometry.boundingSphere.radius;
-
-  AppState.camera.getWorldPosition(_camPos);
-  _offset.subVectors(_camPos, _targetPos);
-  _offset.y = 0; // keep the panel roughly level rather than tilting toward the player's height
-  if (_offset.lengthSq() < 1e-6) _offset.set(1, 0, 0);
-  _offset.normalize().multiplyScalar(r + 1.5);
-
-  infoVrPanel.mesh.position.copy(_targetPos).add(_offset);
-  infoVrPanel.mesh.position.y = _targetPos.y + r + 0.9; // float above the body, not beside it at its equator
-
-  // Billboard: face the panel toward the camera's actual position, not just
-  // match its rotation — those are only the same thing when the panel
-  // happens to sit exactly on the camera's boresight, which it usually
-  // won't (it's offset near the focused body, not centered in view).
-  // Object3D.lookAt() on a non-Camera/Light object orients its local +Z
-  // toward the target — which is exactly PlaneGeometry's front-face
-  // direction, so this is the correct call for a billboard, not a
-  // camera-style "look toward" of its own facing.
-  infoVrPanel.mesh.lookAt(_camPos);
+  // Live eye height, same per-frame tracking every sibling panel does — the
+  // constructor's Y is only correct until the headset reports a real pose.
+  infoVrPanel.mesh.position.y = AppState.camera.position.y + HEIGHT_ABOVE_EYES;
 }

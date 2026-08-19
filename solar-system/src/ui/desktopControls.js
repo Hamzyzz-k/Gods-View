@@ -2,6 +2,7 @@ import { AppState } from "../core/state.js";
 import { sceneRegistry } from "../assistant/sceneRegistry.js";
 import { issProxyMesh } from "../scene/planetFactory.js";
 import { locateAndFocus } from "../interaction/locate.js";
+import { stepMoveSpeed, getMoveSpeedLabel, canStepMoveSpeed } from "../core/moveSpeed.js";
 import { orbitLines } from "../scene/planetFactory.js";
 const { controls } = AppState;
 
@@ -15,6 +16,28 @@ speedSlider.addEventListener("input", () => {
   speedMultiplier = parseFloat(speedSlider.value);
   speedVal.textContent = speedMultiplier.toFixed(1) + "x";
 });
+
+// ---------- flight speed ----------
+// The player's movement speed, not the simulation rate the slider above
+// controls. These are the real DOM buttons the VR control panel dispatches
+// clicks on (xr/vrControlPanel.js), so both surfaces drive the same value
+// through the same path — the contract every other VR control already uses.
+export const moveSpeedDownBtn = document.getElementById("moveSpeedDownBtn");
+export const moveSpeedUpBtn = document.getElementById("moveSpeedUpBtn");
+const moveSpeedVal = document.getElementById("moveSpeedVal");
+
+function syncMoveSpeedUI() {
+  if (moveSpeedVal) moveSpeedVal.textContent = getMoveSpeedLabel();
+  // Disabled at the ends rather than wrapping, matching stepMoveSpeed()'s
+  // clamp — and it's what tells the VR panel to grey the button out too,
+  // since that reads this same disabled state.
+  if (moveSpeedDownBtn) moveSpeedDownBtn.disabled = !canStepMoveSpeed(-1);
+  if (moveSpeedUpBtn) moveSpeedUpBtn.disabled = !canStepMoveSpeed(1);
+}
+
+moveSpeedDownBtn?.addEventListener("click", () => { stepMoveSpeed(-1); syncMoveSpeedUI(); });
+moveSpeedUpBtn?.addEventListener("click", () => { stepMoveSpeed(1); syncMoveSpeedUI(); });
+syncMoveSpeedUI();
 
 export const pauseBtn = document.getElementById("pauseBtn");
 pauseBtn.addEventListener("click", () => {

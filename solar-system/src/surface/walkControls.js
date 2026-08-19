@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import { PointerLockControls } from "three/addons/controls/PointerLockControls.js";
 import { AppState } from "../core/state.js";
+import { getMoveSpeed } from "../core/moveSpeed.js";
 import { EYE_HEIGHT } from "./surfaceMode.js";
 import { playFootstep } from "./footsteps.js";
 
@@ -112,7 +113,7 @@ export function updateWalkControls(dt) {
   if (keys.left) _move.sub(_right);
 
   if (_move.lengthSq() > 0) {
-    _move.normalize().multiplyScalar(WALK_SPEED * dt);
+    _move.normalize().multiplyScalar(WALK_SPEED * getMoveSpeed() * dt);
     rig.position.add(_move);
 
     // Keep the player on the finite ground plane rather than walking out

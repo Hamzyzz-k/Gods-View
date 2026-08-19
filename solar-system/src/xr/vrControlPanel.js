@@ -4,6 +4,7 @@ import { VRPanel, COLORS, roundRect } from "./vrPanel.js";
 import { registerPanel } from "./controllerRaycast.js";
 import { isVrSizeCompareOpen } from "./vrSizeComparePanel.js";
 import { isVrLandmarkPanelOpen } from "./vrLandmarkPanel.js";
+import { getMoveSpeedLabel, isMoveSpeedDefault } from "../core/moveSpeed.js";
 
 // ---------- VR control panel ----------
 // The desktop pause/orbit-lines/moons/constellations/mute controls, mirrored
@@ -41,8 +42,20 @@ const HEIGHT_ABOVE_EYES = 0.55; // look-up angle at FORWARD_Z: atan(0.55/2.6) �
 // math for a shape it was never designed for, buttons are square icons now:
 // simpler, always fits, and state is still visible via the highlight color
 // plus the icon itself (e.g. pause swaps to a play glyph).
-const VOICE_BTN = { domId: "ttsToggleBtn", icon: () => document.getElementById("ttsToggleBtn")?.textContent || "TTS", active: () => !document.getElementById("ttsToggleBtn")?.classList.contains("muted") };
-const AMBIENCE_BTN = { domId: "ambientToggleBtn", icon: () => document.getElementById("ambientToggleBtn")?.textContent || "AMB", active: () => !document.getElementById("ambientToggleBtn")?.classList.contains("muted") };
+// These two mirror the desktop buttons' textContent, which is a fixed "TTS"
+// and "AMB" — the desktop versions show their state through CSS, which does
+// not survive being copied into a canvas. So in VR the label never changed
+// when you muted: only a subtle highlight colour did, on a button that was
+// under 3° wide. Muting genuinely does stop narration mid-sentence (verified:
+// speechSynthesis.speaking goes true -> false on the click), but with no
+// visible change to the control it read as having done nothing.
+//
+// The label now states the state outright instead of relying on colour.
+function isMuted(domId) {
+  return !!document.getElementById(domId)?.classList.contains("muted");
+}
+const VOICE_BTN = { domId: "ttsToggleBtn", icon: () => (isMuted("ttsToggleBtn") ? "VOICE OFF" : "VOICE ON"), active: () => !isMuted("ttsToggleBtn") };
+const AMBIENCE_BTN = { domId: "ambientToggleBtn", icon: () => (isMuted("ambientToggleBtn") ? "AMB OFF" : "AMB ON"), active: () => !isMuted("ambientToggleBtn") };
 
 const BUTTONS_ORBITAL = [
   { domId: "pauseBtn", icon: () => (document.getElementById("pauseBtn")?.textContent === "Resume" ? "▶" : "⏸") },
@@ -58,6 +71,14 @@ const BUTTONS_ORBITAL = [
   { domId: "alignBtn", icon: "ALIGN" },
   { domId: "startTourBtn", icon: "TOUR", active: () => AppState.tourState !== "idle" },
   { domId: "vrLandmarkToggleBtn", icon: "PLACE", active: () => isVrLandmarkPanelOpen() },
+  // Flight speed. The faster button carries the current multiplier as its
+  // label so the panel shows the value without spending a third slot on a
+  // read-only readout — at 8x you can see you're at 8x. Deliberately not the
+  // "−"/"+" glyphs: the scale panel already uses exactly those for tier
+  // zoom, and two different pairs of −/+ buttons floating in front of the
+  // player would be genuinely ambiguous.
+  { domId: "moveSpeedDownBtn", icon: "SLOW" },
+  { domId: "moveSpeedUpBtn", icon: () => getMoveSpeedLabel(), active: () => !isMoveSpeedDefault() },
   VOICE_BTN,
   AMBIENCE_BTN,
 ];
@@ -118,9 +139,13 @@ const CELL = 130; // square button, canvas px
 // desktop-vs-VR audit found missing without shrinking anything again.
 const MAX_PER_ROW = 6;
 
+// Rows are balanced rather than filled greedily: 13 buttons become 5/5/3,
+// not 6/6/1. A single stranded button under two full rows reads as a mistake,
+// and the even split also makes each button wider (fewer columns), which is
+// the whole point of wrapping in the first place.
 function gridShape(count) {
   const rows = Math.ceil(count / MAX_PER_ROW);
-  return { rows, cols: Math.min(count, MAX_PER_ROW) };
+  return { rows, cols: Math.ceil(count / rows) };
 }
 
 // Sized for the LARGEST button set so the panel's physical size — and
@@ -145,6 +170,12 @@ export const buttonHitRects = [];
 
 function drawButton(ctx, x, y, size, btn) {
   const isActive = btn.active ? btn.active() : false;
+  // Read straight off the mirrored DOM button, so any control that disables
+  // itself at a limit (flight speed at its slowest/fastest step) looks
+  // unavailable here too. The click dispatch already no-ops on a disabled
+  // button — this just stops the panel claiming otherwise.
+  const isDisabled = !!document.getElementById(btn.domId)?.disabled;
+  ctx.globalAlpha = isDisabled ? 0.35 : 1;
   roundRect(ctx, x, y, size, size, 18);
   ctx.fillStyle = isActive ? COLORS.pillBgActive : COLORS.pillBg;
   ctx.fill();
@@ -156,11 +187,16 @@ function drawButton(ctx, x, y, size, btn) {
   // Plain-text labels (no emoji) need a smaller font than a single glyph to
   // stay inside the square button — scaled down by label length rather than
   // a fixed size chosen for one-character icons.
-  ctx.font = icon.length <= 1 ? "58px sans-serif" : icon.length <= 3 ? "34px sans-serif" : "26px sans-serif";
+  ctx.font =
+    icon.length <= 1 ? "58px sans-serif"
+    : icon.length <= 3 ? "34px sans-serif"
+    : icon.length <= 5 ? "26px sans-serif"
+    : "21px sans-serif"; // the state-bearing labels ("VOICE OFF") need the extra step down
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillStyle = isActive ? COLORS.blue : COLORS.text;
   ctx.fillText(icon, x + size / 2, y + size / 2 + 2, size - 16);
+  ctx.globalAlpha = 1; // restore, or the next button inherits the dimming
 }
 
 export function redrawControlPanel() {
