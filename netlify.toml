@@ -23,8 +23,17 @@
 #   upload.wikimedia.org      planet/moon/galaxy imagery
 #   api.spaceflightnewsapi.net  news ticker
 #   api.wheretheiss.at        live ISS position
-# Anything else is blocked. When Supabase is added, its project URL has to be
-# appended to connect-src or every auth and database call will be refused.
+# Anything else is blocked.
+#
+# connect-src allows *.supabase.co rather than one specific project URL. That
+# is deliberately a little broader than strictly necessary: pinning the exact
+# project would be marginally tighter, but it would also mean that creating the
+# Supabase project, or ever moving to another one, silently breaks every login
+# until someone remembers to edit this line — a failure that shows up as "the
+# app won't let anyone in" at the worst possible moment. The wildcard still
+# refuses every origin that isn't a Supabase project, which is the property
+# that matters. wss: is listed alongside https: because the client opens a
+# websocket for auth token refresh.
 #
 # The 'sha256-...' entry whitelists the one inline script in index.html — the
 # import map, which cannot be moved to an external file because import maps
@@ -39,7 +48,7 @@
 [[headers]]
   for = "/*"
   [headers.values]
-    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-4V1UclJClx9/FV6gHP29z3mTvSralDNQnI7ho0PBBtY=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org; media-src 'self' blob: data:; font-src 'self'; connect-src 'self' https://api.spaceflightnewsapi.net https://api.wheretheiss.at https://cdn.jsdelivr.net; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' 'sha256-B6+XRHRnr3Y6WHM8ngBHPYCV5goO+5uFR5suc2afygo=' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: https://upload.wikimedia.org; media-src 'self' blob: data:; font-src 'self'; connect-src 'self' https://api.spaceflightnewsapi.net https://api.wheretheiss.at https://cdn.jsdelivr.net https://*.supabase.co wss://*.supabase.co; worker-src 'self' blob:; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'"
 
     # Stops the site being framed by another page, which is how clickjacking
     # works. frame-ancestors above covers modern browsers; this covers old ones.

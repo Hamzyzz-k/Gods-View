@@ -1446,3 +1446,112 @@ body.kiosk #kioskExitHint {
   #curiosityAnswer { transition: none; }
 }
 
+
+/* ---------- auth gate ---------- */
+/* Hidden by default and only ever shown by src/auth/authGate.js once someone
+   actually tries to enter the app — the landing page is public, so this must
+   never appear over it uninvited. */
+#authGate {
+  position: fixed;
+  inset: 0;
+  z-index: 4000; /* above the landing bundle, which owns everything below this */
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(3, 5, 12, 0.82);
+  backdrop-filter: blur(6px);
+}
+#authGate.visible { display: flex; }
+
+#authGate .auth-card {
+  width: min(420px, 100%);
+  padding: 30px 30px 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(10, 12, 24, 0.96);
+  box-shadow: 0 24px 70px rgba(4, 6, 16, 0.6);
+}
+#authGate h2 {
+  margin: 0 0 6px;
+  font-size: 1.3rem;
+  color: #ffd27a;
+}
+#authGate .auth-lede {
+  margin: 0 0 20px;
+  font-size: 0.88rem;
+  color: rgba(255, 255, 255, 0.6);
+  line-height: 1.45;
+}
+#authGate label {
+  display: block;
+  margin-bottom: 5px;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.72);
+}
+#authGate input {
+  width: 100%;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-size: 0.95rem;
+  font-family: inherit;
+}
+#authGate input:focus {
+  outline: none;
+  border-color: rgba(122, 184, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(122, 184, 255, 0.18);
+}
+#authGate #authSubmit {
+  width: 100%;
+  margin-top: 4px;
+  padding: 11px 16px;
+  border: 1px solid rgba(122, 184, 255, 0.5);
+  border-radius: 8px;
+  background: rgba(122, 184, 255, 0.18);
+  color: #cfe4ff;
+  font-size: 0.95rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+#authGate #authSubmit:hover:not(:disabled) { background: rgba(122, 184, 255, 0.28); }
+#authGate #authSubmit:disabled { opacity: 0.6; cursor: default; }
+
+/* Reserves its line at all times, so the card doesn't jump when a message
+   appears — a layout shift under an error is how a mis-click happens. */
+#authGate .auth-error {
+  min-height: 1.2em;
+  margin: 0 0 6px;
+  font-size: 0.82rem;
+  line-height: 1.35;
+  color: #ff9d9d;
+}
+#authGate .auth-links {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+}
+#authGate .linklike {
+  padding: 0;
+  border: none;
+  background: none;
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 0.8rem;
+  font-family: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+}
+#authGate .linklike:hover { color: #7ab8ff; }
+#authGate .auth-foot {
+  margin: 18px 0 0;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: rgba(255, 255, 255, 0.45);
+}

@@ -10,6 +10,20 @@ import { AppState } from "./core/state.js";
 import { initScene } from "./core/sceneSetup.js";
 import { createStarfield, createConstellations } from "./core/starfield.js";
 
+// Authorization gate. Everything below this line — the renderer, the scene,
+// every data request — is held until the visitor is allowed in. Placed here
+// rather than deeper so there is exactly one point to reason about: nothing
+// that follows can run early by accident.
+//
+// Resolves immediately when this deployment has no Supabase configured (the
+// site then behaves exactly as it did before auth existed) or when a valid
+// session already exists. Otherwise it waits for the visitor to actually try
+// to enter, shows the sign-in panel, and resolves once they're in. The landing
+// page is a separate bundle loaded by its own script tag, so it renders and
+// stays fully interactive throughout regardless of what happens here.
+const { gateBeforeBoot, takePendingTier, initSignOut } = await import("./auth/authGate.js");
+await gateBeforeBoot();
+
 initScene();
 createStarfield(AppState.scene);
 AppState.constellations = createConstellations(AppState.scene);
@@ -169,3 +183,16 @@ const { initVrVoiceControl } = await import("./xr/vrVoiceControl.js");
 initVrVoiceControl();
 
 await import("./core/loop.js");
+
+// Post-boot auth wiring. Done last, once the scene exists, so a sign-out
+// triggered mid-session has something coherent to tear down.
+await initSignOut();
+
+// If the visitor picked a specific tier on the landing page and then had to
+// sign in first, that choice was captured by the gate rather than lost. Honour
+// it now that there is a scene to fly through.
+const requestedTier = takePendingTier();
+if (requestedTier) {
+  const { jumpToTierCinematic } = await import("./cosmos/tierTransition.js");
+  jumpToTierCinematic(requestedTier);
+}

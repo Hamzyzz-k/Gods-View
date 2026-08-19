@@ -13,6 +13,7 @@
     "dev:landing": "vite --config vite.landing.config.js"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.3",
     "gsap": "^3.12.5",
     "ogl": "^1.0.11",
     "react": "^18.3.1",
