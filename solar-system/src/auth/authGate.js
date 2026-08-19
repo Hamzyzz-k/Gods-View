@@ -39,6 +39,52 @@ const backBtn = document.getElementById("authBackToLanding");
 let pendingTier = null;
 let resolveGate = null;
 
+// Whether the visitor has already tried to enter, and whether we have yet
+// established that they must sign in first. These are separate because the
+// two events race, and the ordering is not ours to control — see below.
+let enterRequested = false;
+let gating = false;
+
+// REGISTERED SYNCHRONOUSLY, AT MODULE LOAD. This is load-bearing, not tidiness.
+//
+// gateBeforeBoot() has to await a network call (isAuthConfigured() fetches
+// /public-config) before it can know whether to gate at all. Registering this
+// listener after that await left a window — several seconds, if the function
+// is cold-starting — in which a visitor clicking "Begin Exploration" fired
+// gv:enter-app with nobody listening. The landing dismissed itself, the event
+// was gone, and the gate then waited forever for a signal that had already
+// been and passed: static UI chrome over a permanently black screen, with no
+// error anywhere to explain it. That is exactly what happened on the first
+// real deployment.
+//
+// Listening from module evaluation instead means the attempt is always
+// recorded, whenever it happens, and gateBeforeBoot() can consult it once it
+// knows what to do.
+function onEnterAttempt(event) {
+  pendingTier = event.detail?.tier ?? pendingTier;
+  enterRequested = true;
+
+  // Only swallow the event while actually gating. On an open deployment, or
+  // for someone already signed in, main.js's own handler must still receive
+  // it — otherwise picking a tier on the landing page would stop working for
+  // everyone the moment auth was switched on.
+  if (!gating) return;
+  event.stopImmediatePropagation();
+  show();
+}
+document.addEventListener("gv:enter-app", onEnterAttempt, true);
+
+// The landing bundle hides itself with an inline display:none on its own root
+// (landing-src/App.jsx's enterApp) — it sets no class on <body>. An earlier
+// version of this check looked for a "landing-dismissed" body class that
+// nothing has ever set, so it silently never fired. Reading the element's
+// computed style asks the same question of the thing that actually changes.
+function landingIsDismissed() {
+  const root = document.getElementById("landing-root");
+  if (!root || !root.firstChild) return true; // never mounted at all
+  return getComputedStyle(root).display === "none";
+}
+
 function show() {
   gate?.classList.add("visible");
   // Focus the first field so a keyboard user isn't stranded, and so password
@@ -175,15 +221,6 @@ function initInstituteRequest() {
   });
 }
 
-// Captures the enter attempt while the gate is closed. Capture phase and
-// stopImmediatePropagation so main.js's own handler doesn't try to fly to a
-// tier in a scene that hasn't been built yet.
-function interceptEnter(event) {
-  pendingTier = event.detail?.tier ?? pendingTier;
-  event.stopImmediatePropagation();
-  show();
-}
-
 export function takePendingTier() {
   const tier = pendingTier;
   pendingTier = null;
@@ -197,29 +234,38 @@ export async function gateBeforeBoot() {
   // sign in to and the app stays open. Fails open ON PURPOSE and only in this
   // one case — an unconfigured project has no accounts and no student data to
   // protect, so refusing to start would break the site to guard nothing.
-  if (!(await isAuthConfigured())) return;
+  if (!(await isAuthConfigured())) {
+    document.removeEventListener("gv:enter-app", onEnterAttempt, true);
+    return;
+  }
 
   // Already signed in — including the case where the visitor has just followed
   // an invite or reset link, since detectSessionInUrl has already turned that
   // token into a session by now.
-  if (await getSession()) return;
+  if (await getSession()) {
+    document.removeEventListener("gv:enter-app", onEnterAttempt, true);
+    return;
+  }
 
-  document.addEventListener("gv:enter-app", interceptEnter, true);
+  gating = true;
   form?.addEventListener("submit", handleSignIn);
   forgotBtn?.addEventListener("click", handleForgot);
   backBtn?.addEventListener("click", handleBackToLanding);
   initInstituteRequest();
 
-  // If the landing page is already dismissed when we get here — someone
-  // reloaded straight into the app, or arrived on a direct link — there is no
-  // enter event coming, so ask now rather than showing them a blank page.
-  if (document.body.classList.contains("landing-dismissed")) show();
+  // Ask straight away if the visitor is already past the landing page — either
+  // because they clicked through while the checks above were still running
+  // (the race this file's listener comment describes), or because they
+  // reloaded directly into the app. In both cases no further enter event is
+  // coming, so waiting for one would strand them on a black screen.
+  if (enterRequested || landingIsDismissed()) show();
 
   await new Promise((resolve) => {
     resolveGate = resolve;
   });
 
-  document.removeEventListener("gv:enter-app", interceptEnter, true);
+  gating = false;
+  document.removeEventListener("gv:enter-app", onEnterAttempt, true);
 }
 
 // Called once the app has booted. Signing out reloads rather than trying to
