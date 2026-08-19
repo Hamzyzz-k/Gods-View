@@ -15,6 +15,18 @@
 
 begin;
 
+-- Two foreign keys point at auth.users(id) (schema.sql): profiles.id and
+-- quiz_attempts.user_id. The fixtures below can't satisfy either without
+-- creating real auth users — which this script deliberately avoids, to stay
+-- a pure RLS test rather than one that also depends on GoTrue's internal
+-- auth.users columns. Making both constraints deferrable-and-deferred means
+-- they're checked at COMMIT, which this script never reaches (it always
+-- ends in ROLLBACK below), so the fake test ids never trip them. Both
+-- alterations are themselves inside this transaction, so they're undone by
+-- the same rollback and never touch the real schema.
+alter table public.profiles alter constraint profiles_id_fkey deferrable initially deferred;
+alter table public.quiz_attempts alter constraint quiz_attempts_user_id_fkey deferrable initially deferred;
+
 do $$
 declare
   inst_a uuid;
