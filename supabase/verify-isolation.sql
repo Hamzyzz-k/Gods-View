@@ -128,10 +128,24 @@ begin
       raise notice 'OK: student B cannot promote themselves (%)', sqlerrm;
   end;
 
-  -- ---- act as an admin of institute B -------------------------------------
-  -- An institute admin may see their own students, and must still not see
-  -- another institute's.
+  -- ---- promote student B to institute admin (test-harness setup, not a
+  -- simulated user action) ---------------------------------------------------
+  -- This UPDATE must run as the harness, not as B. Without stepping out of
+  -- the impersonation set up above, this is still "student B" trying to
+  -- change their own role column, and the update-own-profile policy
+  -- correctly refuses that -- which is exactly what the self-promotion check
+  -- just above already proved. That protection was correctly blocking the
+  -- harness's own housekeeping, not testing anything new.
+  perform set_config('role', 'postgres', true);
   update public.profiles set role = 'institute_admin' where id = user_b;
+
+  -- ---- act as an admin of institute B -------------------------------------
+  -- Re-impersonate B, who per their own profile row is now an institute_admin.
+  -- These checks have to keep running under RLS as B's own session -- that is
+  -- what actually proves the "admins read own institute" policy, rather than
+  -- merely that the role column says so.
+  perform set_config('role', 'authenticated', true);
+  perform set_config('request.jwt.claims', json_build_object('sub', user_b, 'role', 'authenticated')::text, true);
 
   select count(*) into visible_count from public.quiz_attempts where user_id = user_a;
   if visible_count <> 0 then
