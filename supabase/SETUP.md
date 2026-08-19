@@ -108,15 +108,91 @@ select id, role from public.profiles where role = 'super_admin';
 Supabase's built-in email sender is rate-limited to a handful per hour and is
 meant for development. Inviting a class will hit that limit immediately.
 
-Set up **Brevo** as custom SMTP: Dashboard → **Project Settings** →
-**Authentication** → **SMTP Settings**.
+**Your situation**: another project already sends mail through the same Brevo
+account, and God's View has no custom domain yet — only
+`gods-view-cu.netlify.app`. That second fact matters more than it looks: SPF
+and DKIM authenticate a *domain* by adding DNS records to it, and you can't add
+DNS records to `netlify.app` — Netlify owns that domain, not you. Real domain
+authentication has to wait until God's View has a domain of its own. Steps
+7a–7c below are the path that works today without one; 7d is what to do once
+you have a domain.
 
-Get the host, port, login and key from Brevo → **SMTP & API** → **SMTP**.
+### 7a. One Brevo account, two identities — no conflict
 
-Then set up **domain authentication (SPF and DKIM)** in Brevo before a real
-rollout. Without it, invites to institutional addresses will very likely land
-in spam — and an invite-only system where nobody receives the invite looks
-exactly like a broken app.
+Brevo lets one account hold several **verified senders**. Your other project
+keeps its sender; this section adds a second, separate one just for God's
+View, so invite emails don't arrive looking like they're from your other
+project. The **SMTP login** you authenticate with stays the same for both —
+that's your Brevo account email, and recipients never see it — only the
+**From address** differs per project, and that's what this section sets up.
+
+### 7b. Add and verify a sender for this project
+
+You need a dedicated inbox for this — reusing your personal email would mean
+students' "reply" ends up in your regular inbox forever. A free, purpose-made
+address works fine (e.g. `godsview.notifications@gmail.com`); you just need to
+be able to receive one confirmation email in it.
+
+1. Brevo dashboard → your profile icon (top right) → **Senders, Domains &
+   Dedicated IPs** → **Senders** tab → **Add a sender**.
+2. Enter that dedicated address as the sender email, and a From name students
+   will recognise — e.g. "God's View".
+3. Brevo emails that inbox a 6-digit code. Open it, paste the code back into
+   Brevo, click **Verify**.
+
+Sender is now usable — but see 7d for what "usable" doesn't yet mean.
+
+### 7c. Get SMTP credentials and wire them into Supabase
+
+1. Brevo dashboard → profile icon → **SMTP & API** → **SMTP** tab.
+2. Note the host and port shown (`smtp-relay.brevo.com`, port `587`), and your
+   **SMTP login** (your Brevo account email — same one your other project
+   uses, that's expected).
+3. Click **Generate a new SMTP key** (not an API key — API keys are for
+   Brevo's HTTP API, not SMTP, and won't authenticate here). Copy it now; Brevo
+   only shows it once.
+4. Supabase dashboard → **Authentication** → **Emails** → **SMTP Settings**
+   (Supabase has moved this menu before — if it's not there, check **Project
+   Settings → Authentication**).
+5. Toggle **Enable Custom SMTP** on, then fill in:
+
+   | Field | Value |
+   |---|---|
+   | Sender email | the address you verified in 7b |
+   | Sender name | e.g. `God's View` |
+   | Host | `smtp-relay.brevo.com` |
+   | Port | `587` |
+   | Username | your Brevo SMTP login (account email) |
+   | Password | the SMTP key from step 3 |
+
+6. Save, then use Supabase's own "send test email" if it offers one, or just
+   invite yourself as a test student and confirm it arrives.
+
+### 7d. The honest limitation right now, and the real fix later
+
+A sender verified by confirmation code (7b) proves you control that *mailbox*,
+not that you control a *domain* — so there is nothing for SPF/DKIM to
+authenticate yet, and mail clients know it. Practically: some recipients (Gmail
+in particular) may show the message as sent **"via brevo.com"**, and it has a
+higher chance of landing in spam than a fully authenticated domain would. This
+is a real limitation, not a formality — treat it as good enough to get invites
+flowing now, not as done.
+
+**When you're ready to fix it properly**: buy a cheap domain (Cloudflare or
+Namecheap, roughly $10–15/year — Cloudflare's registrar sells at cost, no
+markup), then in Brevo go to **Senders, Domains & Dedicated IPs** → **Domains**
+→ **Add a domain**, and add the TXT/CNAME/DKIM records it gives you at your
+registrar's DNS settings. Once verified there, update the sender email in 7b
+to use an address on that domain (e.g. `invites@yourdomain.com`) and repeat
+7c with the new sender. Tell me when you have a domain and I'll walk through
+the exact DNS records with you.
+
+### Shared capacity
+
+Both projects draw from the same 300-emails/day free-tier pool — it's per
+Brevo account, not per project or per sender. You confirmed combined volume is
+well under that, so no action needed now; if invite volume grows later, check
+current usage under Brevo's dashboard home before assuming there's headroom.
 
 ---
 
