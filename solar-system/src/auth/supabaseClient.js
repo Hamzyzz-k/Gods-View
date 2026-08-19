@@ -78,7 +78,15 @@ export async function getProfile() {
     .select("id, institute_id, role, full_name")
     .eq("id", userId)
     .single();
-  if (error) return null;
+  if (error) {
+    // Logged rather than swallowed. A missing profile row is the single most
+    // likely reason the account panel comes up empty, and it has a specific
+    // cause worth naming: the row is created by a trigger on auth.users, so a
+    // user made BEFORE schema.sql was applied never got one. Silently
+    // returning null made that indistinguishable from being signed out.
+    console.warn("Could not load your profile row:", error.message);
+    return null;
+  }
   return data;
 }
 

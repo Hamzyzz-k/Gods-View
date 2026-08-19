@@ -311,10 +311,26 @@ async function open() {
   }
 
   const supabase = await getSupabase();
-  const { data: institute } = await supabase.from("institutes").select("name").maybeSingle();
+
+  // Scoped to the caller's OWN institute rather than fetching "the" institute.
+  // A super admin can read every institute row (that is the point of the
+  // role), so an unfiltered maybeSingle() throws the moment a second one
+  // exists — the panel would work while there were zero or one institutes and
+  // then break exactly when the approval queue it exists to manage started
+  // filling up. Super admins belong to no institute, so this is skipped for
+  // them entirely rather than guessing one.
+  let instituteName = null;
+  if (profile.institute_id) {
+    const { data } = await supabase
+      .from("institutes")
+      .select("name")
+      .eq("id", profile.institute_id)
+      .maybeSingle();
+    instituteName = data?.name ?? null;
+  }
 
   const frag = document.createDocumentFragment();
-  frag.appendChild(renderProfile(profile, session, institute?.name));
+  frag.appendChild(renderProfile(profile, session, instituteName));
   frag.appendChild(await renderMyScores());
 
   if (profile.role === "institute_admin" || profile.role === "super_admin") {
