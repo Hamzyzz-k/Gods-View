@@ -38,6 +38,40 @@ Dashboard → **Authentication** → **Sign In / Providers** → **Email**:
 Without this, anyone can create their own account and the invite system is
 decoration.
 
+## 3b. Point invite and reset links at the deployed site
+
+Without this, every invite and password-reset email sends people to
+`http://localhost:3000` — which works on your machine and is a dead link for
+everyone else.
+
+Dashboard → **Authentication** → **URL Configuration**:
+
+1. **Site URL** — set to `https://gods-view-cu.netlify.app`
+
+   This is the fallback destination for every auth email. It defaults to
+   `http://localhost:3000`, which is where the localhost links come from.
+
+2. **Redirect URLs** — add both of these:
+
+   ```
+   https://gods-view-cu.netlify.app/**
+   http://localhost:8888/**
+   ```
+
+   The second is for local `netlify dev`. Port 8888, not 3000 — that is what
+   `netlify dev` serves on, and the entry has to match exactly.
+
+The allowlist is the part that catches people out. Supabase **ignores** the
+`redirectTo` the app asks for unless that exact URL is on this list, and when
+it rejects one it does not error — it quietly falls back to Site URL instead.
+So a wrong or missing entry looks identical to the app never having asked,
+which is why this shows up as "the link goes to localhost" rather than as any
+kind of failure.
+
+The app already sends the right `redirectTo` (`SITE_ORIGIN` for invites,
+the current origin for password resets). This step is only about Supabase
+being willing to honour it.
+
 ## 4. Get your keys
 
 Dashboard → **Project Settings** → **API keys**.
