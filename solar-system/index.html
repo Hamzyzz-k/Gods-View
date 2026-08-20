@@ -191,6 +191,22 @@
         <button type="submit" id="authSubmit">Sign in</button>
       </form>
 
+      <!-- Shown INSTEAD of the sign-in form when the visitor arrived by
+           following an invite or password-reset link (src/auth/authGate.js).
+           They have a session at that point but no password they know, so
+           asking them to sign in is a dead end — this is where they set one. -->
+      <form id="authSetPasswordForm" class="hidden" autocomplete="on">
+        <label for="authNewPassword">Choose a password</label>
+        <input type="password" id="authNewPassword" name="new-password" autocomplete="new-password" minlength="8" required />
+
+        <label for="authNewPassword2">Confirm password</label>
+        <input type="password" id="authNewPassword2" name="confirm-password" autocomplete="new-password" minlength="8" required />
+
+        <p class="auth-error" id="authSetPasswordError" role="alert"></p>
+
+        <button type="submit" id="authSetPasswordSubmit">Set password and continue</button>
+      </form>
+
       <div class="auth-links">
         <button type="button" id="authForgot" class="linklike">Forgot password?</button>
         <button type="button" id="authBackToLanding" class="linklike">Back to the landing page</button>
