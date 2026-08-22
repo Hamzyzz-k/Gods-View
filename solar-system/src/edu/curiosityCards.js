@@ -14,8 +14,7 @@ import { AppState } from "../core/state.js";
 // rather than a plain random pick.
 //
 // Deliberately quiet: sits out of the way of the 3D view, dismissible, and
-// hidden in kiosk mode along with every other panel (style.css's body.kiosk
-// block) and while walking on a surface, where a cosmic-scale question has
+// hidden while walking on a surface, where a cosmic-scale question has
 // nothing to do with what's on screen.
 //
 // Numbers here are real and checkable — the same "approximate but sourceable"

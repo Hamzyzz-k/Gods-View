@@ -96,10 +96,6 @@ initScaleBreadcrumb();
 const { initScrollZoomTier } = await import("./cosmos/scrollZoomTier.js");
 initScrollZoomTier();
 
-// Presentation/kiosk mode. Inert until the button is clicked.
-const { initKioskMode } = await import("./ui/kioskMode.js");
-initKioskMode();
-
 // Trip log + quiz. Both inert until their buttons are clicked.
 const { initTripLog } = await import("./edu/tripLog.js");
 initTripLog();

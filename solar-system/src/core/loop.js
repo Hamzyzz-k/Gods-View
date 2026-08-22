@@ -26,7 +26,6 @@ import { updateTierTransition } from "../cosmos/tierTransition.js";
 import { updateScaleBreadcrumb } from "../ui/scaleBreadcrumb.js";
 import { updateScaleBar } from "../ui/scaleBar.js";
 import { updateCuriosityCards } from "../edu/curiosityCards.js";
-import { updateKioskMode } from "../ui/kioskMode.js";
 import { updateTripLog } from "../edu/tripLog.js";
 import { updateLandmarkUI } from "../landmark/desktopLandmarkUI.js";
 import {
@@ -208,7 +207,6 @@ export function animate() {
   updateScaleBreadcrumb();
   updateScaleBar();
   updateCuriosityCards();
-  updateKioskMode();
   updateTripLog();
   updateLandmarkUI();
 
