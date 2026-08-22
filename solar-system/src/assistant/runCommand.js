@@ -79,6 +79,11 @@ export function applyActions(actions) {
         sceneRegistry.asteroids.setVisible(true);
         sceneRegistry.belt.setVisible(true);
         sceneRegistry.iss.setVisible(true);
+        // Also clears any per-galaxy/cluster override (galaxyFactory.js's
+        // setAllGalaxiesVisible resets that map) — without this, "reset"
+        // never touched anything outside the solar system at all, not even
+        // the collective galaxies toggle.
+        sceneRegistry.galaxies.setVisible(true);
         setOrbitLinesVisible(true);
         clearFocus();
         break;

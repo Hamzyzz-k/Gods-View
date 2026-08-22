@@ -84,9 +84,13 @@ export function interpretCommand(raw) {
     sceneRegistry.asteroids.setVisible(true);
     sceneRegistry.belt.setVisible(true);
     sceneRegistry.iss.setVisible(true);
+    // Also clears any per-galaxy/cluster override (galaxyFactory.js's
+    // setAllGalaxiesVisible resets that map) — without this, reset never
+    // touched anything outside the solar system at all.
+    sceneRegistry.galaxies.setVisible(true);
     setOrbitLinesVisible(true);
     clearFocus();
-    return "Showing everything again — full solar system restored.";
+    return "Showing everything again — full solar system and every galaxy restored.";
   }
 
   // Guided Tour commands. Placed before the focus-intent block below since a
