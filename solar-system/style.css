@@ -1674,6 +1674,24 @@ body.kiosk #kioskExitHint {
   box-shadow: 0 0 0 3px rgba(122, 184, 255, 0.18);
 }
 
+.account-select {
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+.account-select:focus {
+  outline: none;
+  border-color: rgba(122, 184, 255, 0.65);
+  box-shadow: 0 0 0 3px rgba(122, 184, 255, 0.18);
+}
+.account-select:disabled { opacity: 0.55; }
+
 .account-primary, .account-signout, .account-mini {
   padding: 8px 14px;
   border-radius: 8px;

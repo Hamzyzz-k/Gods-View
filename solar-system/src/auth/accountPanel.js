@@ -140,7 +140,7 @@ async function renderRoster() {
   // filter is what provides the security, which it isn't.
   const { data: students, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, created_at")
+    .select("id, full_name, email, role, created_at")
     .order("created_at", { ascending: false });
 
   if (error) {
@@ -170,7 +170,7 @@ async function renderRoster() {
   const list = el("ul", "account-list");
   (students || []).forEach((p) => {
     const li = el("li");
-    const name = p.full_name || "(name not set yet)";
+    const name = p.full_name || p.email || "(no name or email on file)";
     li.appendChild(el("span", "account-list-main", p.role === "institute_admin" ? `${name} · admin` : name));
     const best = bestByUser.get(p.id);
     li.appendChild(
@@ -187,9 +187,33 @@ async function renderRoster() {
   return s;
 }
 
-function renderInvite() {
+function renderInvite(profile, institutes) {
   const s = section("Invite students");
   s.appendChild(el("p", "account-hint", "One email per line. They'll get a link to set their own password."));
+
+  // An institute admin's invites always go to their own institute (the
+  // server reads that from their profile). A super admin belongs to no
+  // institute, so the server has nothing to fall back on — it needs to be
+  // told which one explicitly, or every invite fails with "No institute
+  // specified."
+  let instituteSelect = null;
+  if (profile.role === "super_admin") {
+    s.appendChild(el("p", "account-hint", "Choose which institute to invite them into."));
+    instituteSelect = el("select", "account-select");
+    if (!institutes || institutes.length === 0) {
+      const opt = el("option", null, "No approved institutes yet");
+      opt.value = "";
+      instituteSelect.appendChild(opt);
+      instituteSelect.disabled = true;
+    } else {
+      institutes.forEach((inst) => {
+        const opt = el("option", null, inst.name);
+        opt.value = inst.id;
+        instituteSelect.appendChild(opt);
+      });
+    }
+    s.appendChild(instituteSelect);
+  }
 
   const textarea = el("textarea", "account-textarea");
   textarea.rows = 4;
@@ -205,10 +229,16 @@ function renderInvite() {
       status.textContent = "Add at least one email address.";
       return;
     }
+    if (instituteSelect && !instituteSelect.value) {
+      status.textContent = "Choose an institute first.";
+      return;
+    }
     send.disabled = true;
     status.textContent = "Sending…";
     try {
-      const result = await callFunction(INVITE_ENDPOINT, { emails });
+      const payload = { emails };
+      if (instituteSelect) payload.instituteId = instituteSelect.value;
+      const result = await callFunction(INVITE_ENDPOINT, payload);
       // Reported per address rather than as one pass/fail: pasting a class
       // list where two students already have accounts should still invite the
       // rest, and the admin needs to know which two.
@@ -335,7 +365,19 @@ async function open() {
 
   if (profile.role === "institute_admin" || profile.role === "super_admin") {
     frag.appendChild(await renderRoster());
-    frag.appendChild(renderInvite());
+
+    // Only a super admin needs the picker (see renderInvite) — an institute
+    // admin's own institute is implicit, so skip the extra query for them.
+    let institutesForInvite = null;
+    if (profile.role === "super_admin") {
+      const { data } = await supabase
+        .from("institutes")
+        .select("id, name")
+        .eq("status", "approved")
+        .order("name", { ascending: true });
+      institutesForInvite = data || [];
+    }
+    frag.appendChild(renderInvite(profile, institutesForInvite));
   }
   if (profile.role === "super_admin") {
     frag.appendChild(await renderPendingInstitutes());

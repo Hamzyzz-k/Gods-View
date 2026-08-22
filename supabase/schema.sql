@@ -51,8 +51,23 @@ create table if not exists public.profiles (
   role         text not null default 'student'
                check (role in ('student', 'institute_admin', 'super_admin')),
   full_name    text,
+  -- Mirrored from auth.users.email, not read live from it: an admin's roster
+  -- query runs under RLS as `authenticated`, which has no access to
+  -- auth.users at all, so without a copy here there is nothing to show for a
+  -- student who never sets full_name (which is every student today -- no UI
+  -- writes it anywhere in this app).
+  email        text,
   created_at   timestamptz not null default now()
 );
+
+-- Backfills the column above for a database that ran this script before
+-- `email` existed. A no-op on a fresh database (no rows yet) and safe to
+-- re-run (only touches rows still missing it).
+alter table public.profiles add column if not exists email text;
+update public.profiles p
+set email = u.email
+from auth.users u
+where u.id = p.id and p.email is null;
 
 create table if not exists public.quiz_attempts (
   id              uuid primary key default gen_random_uuid(),
@@ -193,12 +208,13 @@ begin
     meta_role := 'student';
   end if;
 
-  insert into public.profiles (id, institute_id, role, full_name)
+  insert into public.profiles (id, institute_id, role, full_name, email)
   values (
     new.id,
     meta_institute,
     meta_role,
-    coalesce(new.raw_user_meta_data ->> 'full_name', '')
+    coalesce(new.raw_user_meta_data ->> 'full_name', ''),
+    new.email
   )
   on conflict (id) do nothing;
 
