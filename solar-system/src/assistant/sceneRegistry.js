@@ -2,7 +2,8 @@ import { AppState } from "../core/state.js";
 import { sun } from "../scene/sun.js";
 import { planets, orbitLines, allMoonMeshes } from "../scene/planetFactory.js";
 import { asteroidBelt } from "../scene/asteroidBelt.js";
-import { setAllGalaxiesVisible, areGalaxiesVisible } from "../cosmos/galaxyFactory.js";
+import { setAllGalaxiesVisible, areGalaxiesVisible, setGalaxyVisible, isGalaxyVisible } from "../cosmos/galaxyFactory.js";
+import { GALAXY_DATA } from "../cosmos/galaxyData.js";
 const { scene } = AppState;
 
 // ---------- AI scene-control agent ----------
@@ -134,6 +135,31 @@ sceneRegistry["galaxies"] = {
   setVisible: setAllGalaxiesVisible,
   isVisible: areGalaxiesVisible,
 };
+
+// Every individual galaxy/cluster, and — where one exists — its own named
+// black hole, gets its own toggle target too, not just the "galaxies"
+// collective above. Before this, "hide andromeda" had no registry entry to
+// resolve to: setGroupVisible()'s `sceneRegistry[n]?.setVisible(v)` silently
+// no-ops on an unknown name, so the assistant's confirmation reply was a lie
+// — it said the action happened while nothing in the scene actually changed.
+// Registered under both the full name and the short alias (galaxyData.js's
+// `altName`, e.g. "M31" for Andromeda) since either is plausible phrasing,
+// matching how assistant/entityLocator.js already resolves "locate" by
+// either form.
+GALAXY_DATA.forEach((entry) => {
+  const target = {
+    setVisible: (v) => setGalaxyVisible(entry.name, v),
+    isVisible: () => isGalaxyVisible(entry.name),
+  };
+  sceneRegistry[entry.name.toLowerCase()] = target;
+  if (entry.altName) sceneRegistry[entry.altName.toLowerCase()] = target;
+  if (entry.blackHole) {
+    sceneRegistry[entry.blackHole.name.toLowerCase()] = {
+      setVisible: (v) => setGalaxyVisible(entry.blackHole.name, v),
+      isVisible: () => isGalaxyVisible(entry.blackHole.name),
+    };
+  }
+});
 
 export function setGroupVisible(names, visible) {
   names.forEach((n) => sceneRegistry[n]?.setVisible(visible));

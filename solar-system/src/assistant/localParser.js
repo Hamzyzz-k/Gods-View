@@ -13,7 +13,8 @@ import { getTierLadder } from "../cosmos/tierNavigation.js";
 import { ascendTierCinematic, descendTierCinematic, jumpToTierCinematic } from "../cosmos/tierTransition.js";
 import { getTierById } from "../cosmos/tierData.js";
 import { exitLandmark } from "../landmark/landmarkMode.js";
-import { locateAndShow } from "./entityLocator.js";
+import { locateAndShow, normalize } from "./entityLocator.js";
+import { GALAXY_DATA } from "../cosmos/galaxyData.js";
 
 // Short, sayable aliases per tier — the real labels (cosmos/tierData.js)
 // are used for replies, but "go to the supercluster" is how someone would
@@ -48,6 +49,20 @@ export function extractTargets(text) {
   if (/\biss\b|\bspace station\b/.test(text)) found.add("iss");
   if (/\bconstellations?\b/.test(text)) found.add("constellations");
   if (/\bgalax(?:y|ies)\b/.test(text)) found.add("galaxies");
+  // A specific galaxy/cluster by name (not just the collective "galaxies"
+  // above) — matches sceneRegistry.js's per-entry registration, keyed
+  // consistently on entry.name regardless of which form the text actually
+  // used: the full name, the short form people actually say ("andromeda"
+  // for "Andromeda Galaxy", via entityLocator.js's normalize()), or the
+  // altName ("m31").
+  GALAXY_DATA.forEach((entry) => {
+    const full = entry.name.toLowerCase();
+    const short = normalize(full);
+    const altShort = entry.altName ? entry.altName.toLowerCase() : null;
+    if (text.includes(full) || (short && text.includes(short)) || (altShort && text.includes(altShort))) {
+      found.add(full);
+    }
+  });
   if (/\binner planets?\b/.test(text)) INNER_PLANETS.forEach((n) => found.add(n));
   if (/\bouter planets?\b/.test(text)) OUTER_PLANETS.forEach((n) => found.add(n));
   if (/\ball planets?\b|\beverything\b|\ball\b/.test(text)) PLANET_NAMES.forEach((n) => found.add(n));

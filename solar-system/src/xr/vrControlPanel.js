@@ -89,8 +89,17 @@ const BUTTONS_ORBITAL = [
 // "leave", which drives the same #exitSurfaceBtn desktop's own Exit button
 // uses (surface/desktopSurfaceUI.js). Mute toggles carry over since you'd
 // still want them available while walking around.
+//
+// Flight speed carries over too — it was missing here entirely, which meant
+// the VR panel had no speed control to click on at all while walking a
+// surface (not a broken button, an absent one). xr/surfaceLocomotion.js
+// scales both walk and turn speed by the exact same getMoveSpeed() desktop's
+// surface/walkControls.js already reads, so it's just as real a control here
+// as it is in orbital flight.
 const BUTTONS_SURFACE = [
   { domId: "exitSurfaceBtn", icon: "EXIT" },
+  { domId: "moveSpeedDownBtn", icon: "SLOW" },
+  { domId: "moveSpeedUpBtn", icon: () => getMoveSpeedLabel(), active: () => !isMoveSpeedDefault() },
   VOICE_BTN,
   AMBIENCE_BTN,
 ];

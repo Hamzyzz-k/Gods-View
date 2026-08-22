@@ -96,8 +96,14 @@ jumpToTier).
   - "start the cosmic tour" -> {"type":"startCosmicTour"} — a single guided
     journey from Earth out through every tier to the observable universe,
     distinct from the planet-only "startTour" above.
-  - "hide the galaxies"/"show galaxies" (the whole roster, not one by name)
-    -> {"type":"hide"/"show","targets":["galaxies"]}, same as any other group.
+  - "hide the galaxies"/"show galaxies" (the whole roster at once) ->
+    {"type":"hide"/"show","targets":["galaxies"]}, same as any other group.
+  - "hide andromeda"/"show the virgo cluster" (ONE galaxy or cluster by
+    name, impersonal phrasing — no travel intent) -> {"type":"hide"/"show",
+    "targets":["andromeda galaxy"]} etc. Use the exact name from "Valid
+    galaxy names" below as the target string. This works from any tier,
+    same as the collective "galaxies" toggle above — you do not need the
+    galaxy's own tier to be active first.
 
 Locating a specific galaxy, black hole, or Earth landmark by NAME — as
 opposed to a whole scale/tier above, which has no single position to fly

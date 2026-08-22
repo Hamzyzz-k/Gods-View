@@ -37,7 +37,11 @@ const ENTITIES = [
   ...LANDMARK_DATA.map((l) => ({ name: l.name, aliases: [], kind: "landmark", tier: null })),
 ];
 
-function normalize(s) {
+// Exported so localParser.js's hide/show matching (extractTargets below)
+// can recognize the same short forms ("andromeda" for "Andromeda Galaxy")
+// locate already does, rather than duplicating a weaker copy that only
+// matches the full name.
+export function normalize(s) {
   return s
     .toLowerCase()
     .replace(/^(the )/, "")

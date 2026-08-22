@@ -133,6 +133,18 @@ function buildGalaxyMesh(entry, innerR, outerR, dMaxLy) {
 const allGalaxyMeshes = [];
 let galaxiesVisible = true;
 
+// Per-name overrides (galaxy or cluster name, or a galaxy-owned black hole's
+// own name -> visible), independent of the collective galaxiesVisible flag
+// above. Tiers are built LAZILY — buildGalaxiesForTier() for e.g. localGroup
+// only ever runs the first time a player actually enters that tier
+// (cosmos/tierData.js's buildScene()) — so "hide andromeda" said from the
+// solar system, before Local Group has ever been built, has no mesh yet to
+// act on. This map is what makes that choice stick anyway: applied
+// immediately to an already-built mesh if one exists, and consulted again
+// down in buildGalaxiesForTier() so a not-yet-built galaxy still comes in
+// hidden the first time its tier is entered.
+const galaxyOverrides = new Map();
+
 // Builds every galaxy belonging to one tier, registers them all as that
 // tier's clickable set (interaction/raycastPicking.js's per-tier registry
 // — cosmos/tierNavigation.js), and returns a Group ready to add to that
@@ -147,7 +159,8 @@ export function buildGalaxiesForTier(tierId, innerR, outerR, dMaxLy) {
   // the visibility toggle) just sees a flat list of top-level meshes.
   const meshes = entries.flatMap((entry) => buildGalaxyMesh(entry, innerR, outerR, dMaxLy));
   meshes.forEach((m) => {
-    m.visible = galaxiesVisible;
+    const override = galaxyOverrides.get(m.name.toLowerCase());
+    m.visible = override !== undefined ? override : galaxiesVisible;
     group.add(m);
     allGalaxyMeshes.push(m);
   });
@@ -157,9 +170,30 @@ export function buildGalaxiesForTier(tierId, innerR, outerR, dMaxLy) {
 
 export function setAllGalaxiesVisible(visible) {
   galaxiesVisible = visible;
+  galaxyOverrides.clear(); // "show/hide the galaxies" means literally all of them again, not all-except-whatever-was-individually-hidden
   allGalaxyMeshes.forEach((m) => (m.visible = visible));
 }
 
 export function areGalaxiesVisible() {
+  return galaxiesVisible;
+}
+
+// Toggles ONE galaxy, cluster, or galaxy-owned black hole marker by its own
+// name (both kinds live in allGalaxyMeshes and both get a real .name — see
+// buildGalaxyMesh()/blackHole.js's buildBlackHole()), independent of the
+// "galaxies" collective above.
+export function setGalaxyVisible(name, visible) {
+  const target = name.toLowerCase();
+  galaxyOverrides.set(target, visible);
+  const mesh = allGalaxyMeshes.find((m) => m.name.toLowerCase() === target);
+  if (mesh) mesh.visible = visible;
+  return !!mesh;
+}
+
+export function isGalaxyVisible(name) {
+  const target = name.toLowerCase();
+  const mesh = allGalaxyMeshes.find((m) => m.name.toLowerCase() === target);
+  if (mesh) return mesh.visible;
+  if (galaxyOverrides.has(target)) return galaxyOverrides.get(target);
   return galaxiesVisible;
 }
