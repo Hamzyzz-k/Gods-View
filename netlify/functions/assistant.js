@@ -253,10 +253,13 @@ export const handler = async (event) => {
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    // Not an error the user can fix from the browser — tell the client
-    // plainly so it falls back to the local parser instead of looking broken.
+    // Deliberately not an error — this branch only ever fires on a
+    // deployment with no GEMINI_API_KEY set at all, which today means the
+    // public no-signup demo site specifically (production always has the
+    // key configured). A visitor there should get an honest, on-brand
+    // answer rather than a raw "not configured" server message.
     return json(200, {
-      reply: "The AI assistant isn't configured on the server (missing GEMINI_API_KEY).",
+      reply: "Not applicable — this is just a demo, so the AI assistant isn't switched on here. Everything else in the app is fully real and explorable!",
       actions: [],
     });
   }
