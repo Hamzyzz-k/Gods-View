@@ -6,8 +6,13 @@ observable universe, on desktop (mouse orbit, click-to-focus) or in immersive
 WebXR VR (free-flight locomotion, controller laser-pointer selection, voice
 control).
 
-Static site, no build step — ES modules loaded via an importmap, plus two
-Netlify Functions that hold API keys server-side.
+Static site, no build step — ES modules loaded via an importmap, plus a set
+of Netlify Functions that hold API keys server-side.
+
+## Live demo
+
+**[gods-view-demo.netlify.app](https://gods-view-demo.netlify.app)** — the
+full application, open to explore with no sign-up or account required.
 
 ## Running locally
 
