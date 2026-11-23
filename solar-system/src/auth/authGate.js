@@ -147,12 +147,23 @@ function setBusy(busy, label) {
   submitEl.textContent = busy ? label || "Working…" : "Sign in";
 }
 
-// Supabase's auth errors are written for developers. These are the three a
+// Supabase's auth errors are written for developers. These are the ones a
 // student will actually hit, translated into something that tells them what to
 // do next. Anything unrecognised is passed through rather than swallowed,
 // because a message you can search for beats a friendly dead end.
 function friendlyError(error) {
   const raw = String(error?.message || error || "");
+  // A network-level failure: the sign-in request never reached Supabase at
+  // all. supabase-js surfaces the browser's own words here, which differ per
+  // engine — "Failed to fetch" (Chrome), "NetworkError..." (Firefox), "Load
+  // failed" (Safari). The overwhelmingly common cause on a free project is
+  // that it has PAUSED after 7 days of inactivity and stopped answering (see
+  // supabase/SETUP.md, "Before every demo"); next most likely is a wrong
+  // SUPABASE_URL or simply being offline. All three are things the person can
+  // act on, so name them instead of showing the raw developer string.
+  if (/failed to fetch|networkerror|load failed|fetch failed/i.test(raw)) {
+    return "Can't reach the sign-in server. The project may be paused, or you may be offline — check your connection and try again in a minute.";
+  }
   if (/invalid login credentials/i.test(raw)) {
     return "That email and password don't match. If you were invited but never set a password, use “Forgot password?”.";
   }

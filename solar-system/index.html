@@ -3,6 +3,95 @@
 <head>
 <meta charset="UTF-8" />
 <title>God's View</title>
+
+<!-- ---------- faster first render: resource hints + early importmap --------
+     The whole app is buildless ES modules loaded via the importmap below, and
+     almost every one imports three.js (plus the Supabase client) from
+     cdn.jsdelivr.net. preconnect opens that CDN connection at HTML-parse time
+     instead of waiting for the first `import` deep in main.js to discover it.
+     dns-prefetch does the lighter DNS-only version for the Wikimedia image
+     host, which is needed later than first paint. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="dns-prefetch" href="https://upload.wikimedia.org" />
+
+<!-- The importmap was moved up here from the bottom of <body>, UNCHANGED (same
+     text, so the CSP script hash in netlify.toml still matches). It has to come
+     before any <link rel="modulepreload"> below: the first module preload the
+     browser sees locks the module map in place, and an importmap parsed after
+     that point is rejected and silently ignored — which would break every bare
+     `import "three"` in the app. -->
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
+        "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/+esm"
+      }
+    }
+  </script>
+
+<!-- three.js gates the entire scene and is imported, directly or transitively,
+     by nearly every module — the one dependency worth fetching in parallel
+     with main.js. The URL and crossorigin mode match the importmap entry above
+     exactly, so the browser reuses this preload instead of downloading twice. -->
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" crossorigin />
+
+<!-- ---------- boot-module preloads: collapse main.js's import waterfall ------
+     main.js boots by awaiting ~44 dynamic import() calls one after another —
+     each waits for the previous module to download, parse and run before the
+     next even starts fetching, a long serial chain over the network. These
+     hints fetch and compile all of them up front, in parallel, so by the time
+     main.js reaches each `await import()` the module is already in memory.
+     modulepreload only downloads/compiles, it never EXECUTES — so main.js
+     still evaluates every module in the SAME order (scene first, VR panels and
+     the frame loop last). Runtime behaviour is unchanged; only the waiting is
+     removed. Keep this list in step with main.js's imports: a stale entry is a
+     harmless wasted fetch, a missing one simply isn't parallelized. -->
+  <link rel="modulepreload" href="src/core/state.js" />
+  <link rel="modulepreload" href="src/core/sceneSetup.js" />
+  <link rel="modulepreload" href="src/core/starfield.js" />
+  <link rel="modulepreload" href="src/auth/authGate.js" />
+  <link rel="modulepreload" href="src/cosmos/tierTransition.js" />
+  <link rel="modulepreload" href="src/scene/sun.js" />
+  <link rel="modulepreload" href="src/scene/planetFactory.js" />
+  <link rel="modulepreload" href="src/scene/asteroidBelt.js" />
+  <link rel="modulepreload" href="src/assistant/sceneRegistry.js" />
+  <link rel="modulepreload" href="src/ui/infoPanel.js" />
+  <link rel="modulepreload" href="src/interaction/focus.js" />
+  <link rel="modulepreload" href="src/interaction/raycastPicking.js" />
+  <link rel="modulepreload" href="src/ui/desktopControls.js" />
+  <link rel="modulepreload" href="src/ui/eclipseCalendar.js" />
+  <link rel="modulepreload" href="src/surface/desktopSurfaceUI.js" />
+  <link rel="modulepreload" href="src/ui/tourControls.js" />
+  <link rel="modulepreload" href="src/ui/scaleBreadcrumb.js" />
+  <link rel="modulepreload" href="src/cosmos/scrollZoomTier.js" />
+  <link rel="modulepreload" href="src/edu/tripLog.js" />
+  <link rel="modulepreload" href="src/edu/quiz.js" />
+  <link rel="modulepreload" href="src/sizeCompare/sizeCompareMode.js" />
+  <link rel="modulepreload" href="src/edu/curiosityCards.js" />
+  <link rel="modulepreload" href="src/landmark/desktopLandmarkUI.js" />
+  <link rel="modulepreload" href="src/data/spaceNews.js" />
+  <link rel="modulepreload" href="src/assistant/localParser.js" />
+  <link rel="modulepreload" href="src/assistant/runCommand.js" />
+  <link rel="modulepreload" href="src/audio/ambientAudio.js" />
+  <link rel="modulepreload" href="src/voice/desktopMic.js" />
+  <link rel="modulepreload" href="src/scene/alignmentsAndEclipses.js" />
+  <link rel="modulepreload" href="src/core/resize.js" />
+  <link rel="modulepreload" href="src/xr/sessionManager.js" />
+  <link rel="modulepreload" href="src/xr/locomotion.js" />
+  <link rel="modulepreload" href="src/xr/surfaceLocomotion.js" />
+  <link rel="modulepreload" href="src/xr/vrControlPanel.js" />
+  <link rel="modulepreload" href="src/xr/vrInfoPanel.js" />
+  <link rel="modulepreload" href="src/xr/vrTourPanel.js" />
+  <link rel="modulepreload" href="src/xr/vrScalePanel.js" />
+  <link rel="modulepreload" href="src/xr/vrSizeComparePanel.js" />
+  <link rel="modulepreload" href="src/xr/vrLandmarkPanel.js" />
+  <link rel="modulepreload" href="src/xr/controllerRaycast.js" />
+  <link rel="modulepreload" href="src/xr/vrVoiceIndicator.js" />
+  <link rel="modulepreload" href="src/xr/vrVoiceControl.js" />
+  <link rel="modulepreload" href="src/core/loop.js" />
+  <link rel="modulepreload" href="src/auth/accountPanel.js" />
+
 <!-- Inline SVG favicon (a ringed planet). Avoids the /favicon.ico 404 that
      browsers otherwise log to the console on every load. -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='8' fill='%23ffd27a'/%3E%3Cellipse cx='16' cy='16' rx='14' ry='4' fill='none' stroke='%237ab8ff' stroke-width='2' transform='rotate(-20 16 16)'/%3E%3C/svg%3E">
@@ -340,16 +429,8 @@
     </form>
   </div>
 
-  <script type="importmap">
-    {
-      "imports": {
-        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/",
-        "@supabase/supabase-js": "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.112.3/+esm"
-      }
-    }
-  </script>
-
+  <!-- The importmap that used to sit here is now in <head>, so it is parsed
+       before the module preloads — see the comment on it up there. -->
   <script type="module" src="src/main.js"></script>
 </body>
 </html>
