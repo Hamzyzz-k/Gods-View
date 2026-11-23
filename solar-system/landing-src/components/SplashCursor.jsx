@@ -1,4 +1,5 @@
 import { useEffect, useRef } from "react";
+import { createVisibilityGate } from "../lib/visibilityGate.js";
 
 // Ported from React Bits' SplashCursor (JS + CSS variant), logic unchanged —
 // a WebGL fluid-trail cursor effect. Mounted landing-page-only (see
@@ -660,6 +661,10 @@ function SplashCursor({
 
     function updateFrame() {
       if (!isActive) return;
+      if (!gate.visible) {
+        animationFrameId.current = null;
+        return;
+      }
       const dt = calcDeltaTime();
       if (resizeCanvas()) initFramebuffers();
       updateColors(dt);
@@ -992,10 +997,20 @@ function SplashCursor({
     window.addEventListener("touchmove", handleTouchMove, false);
     window.addEventListener("touchend", handleTouchEnd);
 
+    // Stop the fluid sim while the landing page is hidden (the user is in the
+    // 3D app); start it again when the landing page comes back.
+    const gate = createVisibilityGate(canvas, () => {
+      if (isActive && !animationFrameId.current) {
+        lastUpdateTime = Date.now();
+        updateFrame();
+      }
+    });
+
     updateFrame();
 
     return () => {
       isActive = false;
+      gate.disconnect();
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
         animationFrameId.current = null;

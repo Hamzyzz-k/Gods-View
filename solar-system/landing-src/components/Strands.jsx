@@ -1,5 +1,6 @@
 import { Renderer, Program, Mesh, Color, Triangle, RenderTarget } from "ogl";
 import { useEffect, useRef } from "react";
+import { createVisibilityGate } from "../lib/visibilityGate.js";
 
 import "./Strands.css";
 
@@ -296,6 +297,10 @@ export default function Strands({
 
     let animateId = 0;
     const update = (t) => {
+      if (!gate.visible) {
+        animateId = 0;
+        return;
+      }
       animateId = requestAnimationFrame(update);
       const current = propsRef.current;
       program.uniforms.uTime.value = t * 0.001;
@@ -326,10 +331,15 @@ export default function Strands({
         renderer.render({ scene: mesh });
       }
     };
+    // Pause while scrolled out of view or while the landing page is hidden.
+    const gate = createVisibilityGate(ctn, () => {
+      if (!animateId) animateId = requestAnimationFrame(update);
+    });
     animateId = requestAnimationFrame(update);
 
     return () => {
       cancelAnimationFrame(animateId);
+      gate.disconnect();
       window.removeEventListener("resize", resize);
       if (ctn && gl.canvas.parentNode === ctn) ctn.removeChild(gl.canvas);
       gl.getExtension("WEBGL_lose_context")?.loseContext();

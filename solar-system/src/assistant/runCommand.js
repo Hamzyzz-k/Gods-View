@@ -151,22 +151,40 @@ export function applyActions(actions) {
   });
 }
 
-// Cleared once the assistant function turns out not to be deployed, so a
-// static build (no Netlify runtime) logs one 404 instead of one per message
-// and goes straight to the local parser thereafter. Resets on reload.
-let assistantBackendAvailable = true;
+// A plain static server on this machine (no Netlify runtime) answers every
+// assistant call with 404. There, skip the backend after the first 404 so the
+// console doesn't fill with one 404 per message. On the real site a 404 is a
+// transient blip (cold start, mid-deploy), so it only pauses the backend for
+// a short while and the next message after that tries again, instead of
+// leaving the AI switched off until a reload.
+const IS_LOCAL = ["localhost", "127.0.0.1", "[::1]"].includes(location.hostname);
+const RETRY_AFTER_MS = 30_000;
+const REQUEST_TIMEOUT_MS = 20_000;
+let backendPausedUntil = 0;
+let backendMissingLocally = false;
 
 export async function callAssistant(command) {
-  if (!assistantBackendAvailable) throw new Error("Assistant backend unavailable");
+  if (backendMissingLocally || Date.now() < backendPausedUntil) throw new Error("Assistant backend unavailable");
   const context = await getSceneContext();
-  const res = await fetch(ASSISTANT_ENDPOINT, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ command, context }),
-  });
+  // A hung request would leave the reply stuck on "Thinking" forever; give up
+  // after a while and answer offline instead.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(ASSISTANT_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ command, context }),
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timer);
+  }
   if (res.status === 404) {
-    assistantBackendAvailable = false;
-    throw new Error("Assistant function not deployed");
+    if (IS_LOCAL) backendMissingLocally = true;
+    else backendPausedUntil = Date.now() + RETRY_AFTER_MS;
+    throw new Error("Assistant function not found");
   }
   if (!res.ok) throw new Error("Assistant error " + res.status);
   const data = await res.json();
@@ -197,20 +215,23 @@ export async function runCommand(command) {
   logMessage(command, "user");
 
   if (ASSISTANT_ENDPOINT) {
-    const pending = logMessage("…", "agent");
+    const pending = logMessage("Thinking", "agent");
+    pending.classList.add("thinking");
     try {
       const { text, isAnswer } = await callAssistant(command);
+      pending.classList.remove("thinking");
       pending.textContent = text;
       if (isAnswer) pending.classList.add("answer");
       speak(text);
     } catch (err) {
+      pending.classList.remove("thinking");
       const fallback = interpretCommand(command);
-      // Distinguish "no backend deployed" from "backend is there but failed".
-      // The first is the normal case when the site is served as plain static
-      // files (npx serve), and says so rather than looking like a fault.
-      const reason = assistantBackendAvailable
-        ? "AI unreachable — offline mode"
-        : "offline mode — run `netlify dev` for AI answers";
+      // The `netlify dev` hint is only for a developer running the site from
+      // plain static files on their own machine; visitors to the real site
+      // just get told the AI is briefly unavailable.
+      const reason = backendMissingLocally
+        ? "offline mode — run `netlify dev` for AI answers"
+        : "AI briefly unavailable, answered offline — try again in a moment";
       pending.textContent = `${fallback} (${reason})`;
       if (lastReplyWasAnswer) pending.classList.add("answer");
       speak(fallback);

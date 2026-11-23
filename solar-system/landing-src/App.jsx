@@ -88,8 +88,9 @@ export default function App() {
       <section className="gv-section gv-gravity-section">
         <h2 className="gv-section-title">This is what gravity actually looks like</h2>
         <p className="gv-section-copy">
-          Grab the black hole and move it. The small bodies are on real, numerically-simulated orbits around it —
-          genuine inverse-square gravity, not a canned animation — so wherever you drag it, they follow.
+          Mass bends space, and anything moving through that bend falls toward it. Throw an object past the mass
+          and see for yourself: too slow and it falls in, too fast and it escapes, and in between it keeps falling
+          but keeps missing. That is an orbit. The motion is real inverse-square gravity, simulated live.
         </p>
         <div className="gv-gravity-frame">
           <GravityWell />

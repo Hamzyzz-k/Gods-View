@@ -741,6 +741,31 @@ a:focus-visible,
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+/* Waiting on the AI (2–6 s): animated dots so it never looks frozen. */
+#agentLog .msg.agent.thinking {
+  opacity: 0.75;
+  font-style: italic;
+}
+#agentLog .msg.agent.thinking::after {
+  content: "";
+  display: inline-block;
+  width: 1.2em;
+  text-align: left;
+  animation: thinking-dots 1.2s steps(4, end) infinite;
+}
+@keyframes thinking-dots {
+  0% { content: ""; }
+  25% { content: "."; }
+  50% { content: ".."; }
+  75% { content: "..."; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #agentLog .msg.agent.thinking::after {
+    animation: none;
+    content: "...";
+  }
+}
+
 #agentLog .msg.agent.answer {
   max-width: 96%;
   line-height: 1.5;

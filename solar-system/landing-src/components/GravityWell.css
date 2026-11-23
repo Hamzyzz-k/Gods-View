@@ -3,44 +3,200 @@
   width: 100%;
   height: 100%;
   min-height: 0;
-  touch-action: none;
+  touch-action: none; /* dragging inside the frame aims a throw, so the browser must not pan */
   overflow: hidden;
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  container-type: size;
 }
 
-.gravity-well canvas {
+/* Touch screens: until tapped awake, vertical swipes scroll the page. */
+@media (pointer: coarse) {
+  .gravity-well:not(.is-armed) {
+    touch-action: pan-y;
+  }
+  .gravity-well:not(.is-armed) .gravity-well__core {
+    touch-action: pan-y;
+  }
+}
+
+.gravity-well__sheet,
+.gravity-well__overlay {
+  position: absolute;
+  inset: 0;
   display: block;
   width: 100%;
   height: 100%;
+}
+
+.gravity-well__overlay,
+.gravity-well__layer {
+  pointer-events: none;
+}
+
+.gravity-well__layer {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
 }
 
 .gravity-well__core {
   position: absolute;
   left: 50%;
   top: 50%;
-  transform: translate(-50%, -50%); /* left/top themselves are set every frame in JS as it's dragged around; this just keeps it centered on that point */
+  transform: translate(-50%, -50%); /* left/top are set every frame in JS */
   width: 34px;
   height: 34px;
   border-radius: 50%;
   background: radial-gradient(circle at 50% 50%, #000 0%, #060606 55%, var(--gv-gold, #ffd27a) 72%, #000 88%, #000 100%);
   box-shadow: 0 0 30px rgba(255, 210, 122, 0.55), 0 0 60px rgba(255, 140, 58, 0.3);
-  pointer-events: auto;
   cursor: grab;
   touch-action: none;
   z-index: 2;
 }
-.gravity-well__core:active {
+.gravity-well__core.is-dragging {
   cursor: grabbing;
 }
 
-.gravity-well__body {
+/* A thrown object: a small lit sphere with a contact shadow. */
+.gravity-well__object {
   position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 9px;
-  height: 9px;
+  left: 0;
+  top: 0;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
-  box-shadow: 0 0 10px currentColor, 0 0 4px rgba(255, 255, 255, 0.8);
+  background: radial-gradient(circle at 35% 30%, #fff 0%, var(--obj) 38%, color-mix(in srgb, var(--obj) 40%, #000) 100%);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--obj) 70%, transparent), 0 4px 8px rgba(0, 0, 0, 0.6);
+  will-change: transform;
+}
+
+.gravity-well__hud {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 420px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: rgba(5, 6, 12, 0.66);
+  border: 1px solid var(--gv-border, rgba(255, 255, 255, 0.14));
+  color: var(--gv-text-dim, rgba(232, 236, 247, 0.6));
+  font-size: 13px;
+  line-height: 1.35;
   pointer-events: none;
-  will-change: left, top, transform, opacity;
-  z-index: 1;
+}
+.gravity-well__hud strong {
+  color: var(--gv-text, #e8ecf7);
+  font-size: 14px;
+  font-weight: 600;
+}
+.gravity-well__outcome.is-fall { color: #ff8a6c; }
+.gravity-well__outcome.is-orbit { color: #8fe3c7; }
+.gravity-well__outcome.is-escape { color: #ffd27a; }
+
+.gravity-well__controls {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 16px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: rgba(5, 6, 12, 0.66);
+  border: 1px solid var(--gv-border, rgba(255, 255, 255, 0.14));
+  color: var(--gv-text-dim, rgba(232, 236, 247, 0.6));
+  font-size: 13px;
+  cursor: default;
+}
+
+.gravity-well__mass {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--gv-text, #e8ecf7);
+}
+.gravity-well__mass input {
+  width: 140px;
+  accent-color: var(--gv-gold, #ffd27a);
+  touch-action: pan-x;
+}
+
+.gravity-well__stats {
+  flex: 1;
+  min-width: 0;
+}
+
+.gravity-well__clear {
+  padding: 6px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--gv-border, rgba(255, 255, 255, 0.14));
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--gv-text, #e8ecf7);
+  font: inherit;
+  cursor: pointer;
+}
+.gravity-well__clear:hover {
+  background: rgba(255, 255, 255, 0.12);
+}
+.gravity-well__clear:focus-visible,
+.gravity-well__mass input:focus-visible {
+  outline: 2px solid var(--gv-blue, #7ab8ff);
+  outline-offset: 2px;
+}
+
+/* Short frames (small windows, landscape phones): keep the sheet visible by
+   shrinking the overlays to a single line each. */
+@container (max-height: 380px) {
+  .gravity-well__hud {
+    top: 8px;
+    left: 8px;
+    right: auto;
+    padding: 5px 10px;
+    font-size: 12px;
+  }
+  .gravity-well__hud span,
+  .gravity-well__stats {
+    display: none;
+  }
+  .gravity-well__hud strong {
+    font-size: 12px;
+  }
+  .gravity-well__controls {
+    left: auto;
+    right: 8px;
+    bottom: 8px;
+    padding: 4px 8px;
+    gap: 8px;
+    font-size: 12px;
+  }
+  .gravity-well__mass input {
+    width: 80px;
+  }
+  .gravity-well__clear {
+    padding: 3px 10px;
+  }
+}
+
+@media (max-width: 560px) {
+  .gravity-well__hud {
+    font-size: 12px;
+    padding: 8px 10px;
+  }
+  .gravity-well__mass input {
+    width: 100px;
+  }
+  .gravity-well__stats {
+    flex-basis: 100%;
+    order: 3;
+  }
 }
